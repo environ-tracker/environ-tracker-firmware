@@ -1,0 +1,140 @@
+/dts-v1/;
+#include <nordic/nrf52833_qiaa.dtsi>
+
+/ {
+    model = "Thesis Environment Tracker";
+    compatible = "nordic,environ-tracker-rev1";
+
+    chosen {
+        zephyr,console = &uart0;
+        zephyr,shell-uart = &uart0;
+        zephyr,sram = &sram0;
+        zephyr,flash = &flash0;
+        zephyr,code-partition = &flash0;
+    };
+
+    /* Aliases provided for compatibility with samples */
+    aliases {
+        lora0 = &lora;
+        shield_i2c = &i2c0;
+    };
+
+    connections {
+        bat_chrg: bat_chrg_0 {
+            gpios = <&gpio0 19 GPIO_ACTIVE_LOW>;
+            label = "BatteryChargingState";
+        };
+    };
+
+    environ_tracker_header: connector {
+        compatible = "environ-tracker-header";
+        #gpio-cells = <2>;
+        gpio-map-mask = <0xffffffff 0xffffffc0>;
+        gpio-map-pass-thru = <0 0x3f>;
+        gpio-map =  <0 0 &gpio0 2 0>,
+                    <1 0 &gpio0 8 0>;
+    };
+
+    &gpiote {
+        status = "okay";
+    };
+
+    &gpio0 {
+        status = "okay";
+    };
+
+    &gpio1 {
+        status = "okay";
+    };
+
+    &uart0 {
+        compatible = "nordic,nrf-uarte";
+        status = "okay";
+        current-speed = <115200>;
+        tx-pin = <15>;
+        rx-pin = <13>;
+    };
+
+    /* uart for zoe-m8q */
+    &uart1 {
+        compatible = "nordic,nrf-uarte";
+        status = "okay";
+        current-speed = <9600>;
+        tx-pin = <24>;
+        rx-pin = <32>;
+        zoem8q: zoem8q@0 { /* TODO: port this */
+            reg = <0>;
+            label = "ZOE-M8Q";
+            tx-ready-gpios = <&gpio0 9 GPIO_ACTIVE_LOW>;
+            reset-gpios = <&gpio1 6 GPIO_ACTIVE_LOW>;
+            exti-gpios = <&gpio0 10 GPIO_ACTIVE_LOW>;
+        }
+    };
+
+    &i2c0 {
+        compatible = "nordic,nrf-twim";
+        status = "okay";
+        clock-frequency = <I2C_BITRATE_STANDARD>;
+        sda-pin = <12>;
+        scl-pin = <41>;
+    };
+
+    /* LORA spi */
+    &spi0 {
+        compatible = "nordic,nrf-spim";
+        status = "okay";
+        sck-pin = <17>;
+        mosi-pin = <20>;
+        miso-pin = <22>;
+        cs-gpios = <&gpio0 29 GPIO_ACTIVE_LOW>;
+        lora: sx1262@0 {
+            compatible = "semtech,sx1262";
+            reg = <0>;
+            label = "SX1262";
+            reset-gpios = <&gpio0 31 GPIO_ACTIVE_LOW>;
+            busy-gpios = <&gpio1 2 GPIO_ACTIVE_LOW>;
+            dio1-gpios = <&gpio1 4 GPIO_ACTIVE_HIGH>;
+            spi-max-frequency = <1000000>;
+        };
+    };
+
+    /* external flash SPI */
+    &spi1 {
+        compatible = "nordic,nrf-spim";
+        status = "okay";
+        sck-pin = <4>;
+        mosi-pin = <6>;
+        miso-pin = <26>;
+        cs-gpios = <&gpio1 5 GPIO_ACTIVE_LOW>;
+        mx25v8035f: mx25v8035f@0 {
+            compatible = "jedec,spi-nor";
+            reg = <0>;
+            spi-max-frequency = <1000000>;
+            label = "MX258035F";
+            jedec-id = <0xc2 0x23 0x14>;
+            size = <>;
+            erase-block-size = <>;
+            write-block-size = <1>;
+        };
+    };
+
+    &flash0 {
+        partitions {
+            compatible = "fixed-partitions";
+            #address-cells = <1>;
+            #size-cells = <1>;
+
+            /*
+             * The flash starting at 0x0007a000 and ending at
+             * 0x0007ffff (sectors 122-127) is reserved for use
+             * by the application.
+             * Storage partition will be used by FCB/LittleFS/NVS
+             * if enabled.
+             */
+            storage_partition: partition@7a000 {
+                label = "storage";
+                reg = <0x0007a000 0x00006000>;
+            };
+        };
+    };
+};

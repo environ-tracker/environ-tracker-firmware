@@ -1,0 +1,9 @@
+description: |
+  Board connections exposed on the environ-tracker-v1 board.
+
+  0 HAT_ADC
+  1 HAT_INT
+
+compatible: "environ-tracker-header"
+
+include: [gpio-nexus.yaml, base.yaml]
