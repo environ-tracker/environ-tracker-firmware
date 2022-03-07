@@ -1,3 +1,14 @@
+# editors
+.vscode
+*.swp
+*~
+
+# python
+.venv
+
+# build
+/build*
+
 # Prerequisites
 *.d
 

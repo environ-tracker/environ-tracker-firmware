@@ -1,0 +1,27 @@
+# SX1502 GPIO configuration options
+
+# Workaround for not being able to have commas in macro arguments
+DT_COMPAT_SEMTECH_SX1502 := semtech,sx1502
+
+menuconfig GPIO_SX1502
+	bool "SX1502 I2C GPIO chip"
+	default $(dt_compat_enabled,$(DT_COMPAT_SEMTECH_SX1502))
+	depends on I2C
+	help
+	  Enable driver for SX1502 I2C GPIO chip.
+
+if GPIO_SX1502
+
+config GPIO_SX1502_INIT_PRIORITY
+	int "Init priority"
+	default 70
+	help
+	  Device driver initialization priority.
+
+config GPIO_SX1502_INTERRUPT
+	bool "Interrupt enable"
+	default n
+	help
+	  Enable support for interrupts on GPIO pins.
+
+endif # GPIO_SX1502

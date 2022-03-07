@@ -1,0 +1,3 @@
+if GPIO
+rsource "Kconfig.sx1502"
+endif # GPIO
