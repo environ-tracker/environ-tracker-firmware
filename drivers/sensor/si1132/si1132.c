@@ -117,55 +117,6 @@ static int si1132_write_cmd_reg(const struct device *i2c_dev, uint8_t cmd)
     return rc;
 }
 
-// /**
-//  * @brief 
-//  * 
-//  * @param i2c_dev I2C device Si1132 device is on
-//  * @param si_data 
-//  * @return int 0 on success
-//  */
-// static int si1132_get_light(const struct device *i2c_dev,
-//                     struct si1132_data *si_data)
-// {
-//     int rc;
-//     uint8_t data[4];
-
-//     rc = i2c_burst_read(i2c_dev, DT_INST_REG_ADDR(0),
-//             SI1132_REG_ALS_VIS_DATA, data, sizeof(data));
-//     if (rc == 0) {
-//         si_data->vis_light = sys_le16_to_cpu(data[0] << 8 | data[1]);
-//         si_data->ir_light = sys_le_to_cpu(data[2] << 8 | data[3]);
-//     } else {
-//         LOG_ERR("Error while reading VIS and IR data registers");
-//     }
-
-//     return rc;
-// }
-
-// /**
-//  * @brief 
-//  * 
-//  * @param i2c_dev I2C device Si1132 device is on
-//  * @param si_data 
-//  * @return int 0 on success
-//  */
-// static int si1132_get_uv(const struct device *i2c_dev,
-//                     struct si1132_data *si_data)
-// {
-//     int rc;
-//     uint8_t data[2];
-
-//     rc = i2c_burst_read(i2c_dev, DT_INST_REG_ADDR(0),
-//             SI1132_REG_AUX_DATA, sizeof(data));
-//     if (rc == 0) {
-//         si_data->uv_index = sys_le16_to_cpu(data[0] << 8 | data[1]);
-//     } else {
-//         LOG_ERR("Error while reading UV data register");
-//     }
-
-//     return rc;
-// }
-
 static int si1132_sample_fetch(const struct device *dev,
                     enum sensor_channel chan)
 {
