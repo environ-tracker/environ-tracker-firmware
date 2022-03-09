@@ -1,0 +1,5 @@
+config SI1132
+	bool "Si1132 Visible, IR and UV Light Sensor"
+	depends on I2C
+	help
+		Enable I2C-based driver for Si1132 Visible, IR and UV Light Sensor.

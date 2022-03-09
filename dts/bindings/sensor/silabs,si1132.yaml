@@ -1,0 +1,12 @@
+description: |
+  Silabs visible, IR and UV light sensor.
+
+compatible: "silabs,si1132"
+
+include: i2c.yaml
+
+properties:
+  nint-gpios:
+    type: phandle-array
+    required: false
+    description: Active low interrupt pin to be used
