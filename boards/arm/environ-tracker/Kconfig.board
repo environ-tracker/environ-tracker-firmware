@@ -1,0 +1,3 @@
+config BOARD_ENVIRON_TRACKER_V1
+	bool "Environ Tracker V1"
+	depends on SOC_NRF52833_QIAA
