@@ -5,17 +5,17 @@
     };
 
     /* NOTE unsure */
-    mic {
-        compatible = "voltage-divider";
-        io-channels = <&adc 0>;
-        output-ohms = <>;
-        full-ohms = <()>;
-    };
+    // mic {
+    //     compatible = "voltage-divider";
+    //     io-channels = <&adc 0>;
+    //     output-ohms = <>;
+    //     full-ohms = <()>;
+    // };
 
     leds {
         compatible = "gpio-leds";
         led0: led_0 {
-            gpios = <&sx1502 3 GPIO_ACTIVE_HIGH>;
+             gpios = <&sx1502 3 GPIO_ACTIVE_HIGH>;
             label = "led0";
         };
     };
@@ -39,28 +39,26 @@
             label = "Button3";
         };
     };
-
 };
 
 &adc {
     status = "okay";
 };
 
-&shield_i2c {
+&shieldi2c {
     status = "okay";
 
     sx1502: sx1502@20 {
-        compatible = "semtech,sx1502"; /* TODO implement this */
+        compatible = "semtech,sx1502";
         reg = <0x20>;
         label = "GPIO_P0";
         gpio-controller;
-        #gpio-cells = <2>; /* NOTE unsure */
+        #gpio-cells = <2>;
         ngpios = <8>;
         nint-gpios = <&environ_tracker_header 1 GPIO_ACTIVE_LOW>;
         /* Setup init states */
         init-out-high = <0xff>;
         init-out-low = <0x00>;
-        init-in = <0x00>;
     };
 
     bme680: bme680@76 {
@@ -70,17 +68,17 @@
     };
 
     lsm6dso: lsm6dso@6a {
-        compatible = "st,lsm6ds0";
+        compatible = "st,lsm6dso";
         reg = <0x6a>;
         label = "LSM6DSO";
-        irq-gpios = <&sx1502 0 GPIO_ACTIVE_LOW>; /* NOTE likely wrong or unrequired */
+        irq-gpios = <&sx1502 0 GPIO_ACTIVE_LOW>;
     };
 
     si1132: si1132@60 {
-        compatible = "silabs,si1132"; /* TODO implement */
+        compatible = "silabs,si1132";
         reg = <0x60>;
         label = "Si1132";
-        irq-gpios = <&sx1502 4 GPIO_ACTIVE_LOW>;
+        nint-gpios = <&sx1502 4 GPIO_ACTIVE_LOW>;
     };
 
     ssd1306: ssd1306@3c {
