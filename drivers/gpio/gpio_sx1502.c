@@ -6,7 +6,6 @@
 #include <device.h>
 #include <init.h>
 #include <drivers/gpio.h>
-#include <drivers/gpio/gpio_sx1502.h>
 #include <drivers/i2c.h>
 #include <sys/byteorder.h>
 #include <sys/util.h>
@@ -260,7 +259,7 @@ static int sx1502_config(const struct device *dev,
 		pins->pull_up, pins->pull_down,
 		pins->dir, pins->data);
 
-	rc = write_pin_state(cfg, drv_data, pins, data_first);
+	rc = write_pin_state(cfg, drv_data, pins);
 
 out:
 	k_sem_give(&drv_data->lock);
@@ -321,7 +320,7 @@ static int port_write(const struct device *dev,
 	uint8_t orig_out = *outp;
 	uint8_t out = ((orig_out & ~mask) | (value & mask)) ^ toggle;
 	int rc = i2c_reg_write_byte_be(drv_data->i2c_master, cfg->i2c_slave_addr,
-				       SX1509B_REG_DATA, out);
+				       SX1502_REG_DATA, out);
 	if (rc == 0) {
 		*outp = out;
 	}
@@ -483,15 +482,15 @@ static int sx1502_init(const struct device *dev)
 			 & ~DT_INST_PROP(0, init_out_low)),
 	};
 
-	rc = i2c_reg_write_word_be(drv_data->i2c_master,
+	rc = i2c_reg_write_byte_be(drv_data->i2c_master,
 					cfg->i2c_slave_addr,
-					SX1509B_REG_DATA,
+					SX1502_REG_DATA,
 					drv_data->pin_state.data);
 
 	if (rc == 0) {
-		rc = i2c_reg_write_word_be(drv_data->i2c_master,
+		rc = i2c_reg_write_byte_be(drv_data->i2c_master,
 					   cfg->i2c_slave_addr,
-					   SX1509B_REG_DIR,
+					   SX1502_REG_DIR,
 					   drv_data->pin_state.dir);
 	}
 
