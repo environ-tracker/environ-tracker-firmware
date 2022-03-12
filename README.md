@@ -28,7 +28,7 @@ The application can be built by running:
 west build -s app
 ```
 
-Note that `environ-tracker` has setup the `BOARD` and `SHIELD` internally via `CMakeLists.txt` directives. The `environ-tracker-v1` board found in this
+Note that `environ-tracker` has setup the `BOARD` and `SHIELD` internally via `CMake` directives. The `environ-tracker-v1` board found in this
 repository is used.
 
 ```shell
