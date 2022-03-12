@@ -9,12 +9,12 @@ environment. You can follow the official
 ### Initialization
 
 The first step is to initialize the workspace folder (``my-workspace``) where
-the ``example-application`` and all Zephyr modules will be cloned. You can do
+the ``environ-tracker`` and all Zephyr modules will be cloned. You can do
 that by running:
 
 ```shell
-# initialize my-workspace for the example-application (main branch)
-west init -m https://github.com/zephyrproject-rtos/example-application --mr main my-workspace
+# initialize my-workspace for the environ-tracker (main branch)
+west init -m https://github.com/Hellymaw/environ-tracker --mr main my-workspace
 # update Zephyr modules
 cd my-workspace
 west update
@@ -25,21 +25,11 @@ west update
 The application can be built by running:
 
 ```shell
-west build -b $BOARD -s app
+west build -s app
 ```
 
-where `$BOARD` is the target board. The `custom_plank` board found in this
-repository can be used. Note that Zephyr sample boards may be used if an
-appropriate overlay is provided (see `app/boards`).
-
-A sample debug configuration is also provided. You can apply it by running:
-
-```shell
-west build -b $BOARD -s app -- -DOVERLAY_CONFIG=debug.conf
-```
-
-Note that you may also use it together with `rtt.conf` if using Segger RTT. Once
-you have built the application you can flash it by running:
+Note that `environ-tracker` has setup the `BOARD` and `SHIELD` internally via `CMakeLists.txt` directives. The `environ-tracker-v1` board found in this
+repository is used.
 
 ```shell
 west flash
