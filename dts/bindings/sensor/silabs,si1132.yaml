@@ -3,7 +3,7 @@ description: |
 
 compatible: "silabs,si1132"
 
-include: i2c.yaml
+include: i2c-device.yaml
 
 properties:
   nint-gpios:
