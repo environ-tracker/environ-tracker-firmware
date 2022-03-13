@@ -80,7 +80,7 @@ shieldi2c: &i2c0 {
 };
 
 /* LORA spi */
-&spi0 {
+&spi1 {
     compatible = "nordic,nrf-spim";
     status = "okay";
     sck-pin = <17>;
@@ -99,7 +99,7 @@ shieldi2c: &i2c0 {
 };
 
 /* external flash SPI */
-&spi1 {
+&spi2 {
     compatible = "nordic,nrf-spim";
     status = "okay";
     sck-pin = <4>;
