@@ -3,7 +3,7 @@
 
 / {
     model = "Thesis Environment Tracker";
-    compatible = "nordic,environ-tracker-rev1";
+    compatible = "nordic,environ_tracker";
 
     chosen {
         zephyr,console = &uart0;

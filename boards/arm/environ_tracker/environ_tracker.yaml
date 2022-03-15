@@ -1,5 +1,5 @@
-identifier: environ-tracker-v1
-name: Environ Tracker V1
+identifier: environ_tracker
+name: Environ Tracker
 type: mcu
 arch: arm
 ram: 256
