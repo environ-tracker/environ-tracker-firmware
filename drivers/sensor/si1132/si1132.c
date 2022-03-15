@@ -1,6 +1,5 @@
 #define DT_DRV_COMPAT silabs_si1132
 
-#include <drivers/sensor.h>
 #include <kernel.h>
 #include <device.h>
 #include <init.h>
@@ -11,6 +10,7 @@
 #include <drivers/i2c.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <drivers/sensor.h>
 
 #include "si1132.h"
 
@@ -96,11 +96,11 @@ static int si1132_write_cmd_reg(const struct device *i2c_dev, uint8_t cmd)
     }
 
     /* Write command into Command register */
-    rc = i2c_reg_write_byte(i2c_dev, DT_INST_REG_ADDR(0), SI1132_REG_COMMAND,
-            &cmd);
+    rc = i2c_reg_write_byte(i2c_dev, DT_INST_REG_ADDR(0), 
+            SI1132_REG_COMMAND, cmd);
     if (rc != 0) {
-        LOG_ERR("Error while attempting to write cmd: %02x to 
-                Command register", cmd);
+        LOG_ERR("Error while attempting to write cmd: %02x to "
+                "Command register", cmd);
         return rc;
     }
 
@@ -127,12 +127,12 @@ static int si1132_sample_fetch(const struct device *dev,
     __ASSERT_NO_MSG(chan == SENSOR_CHAN_ALL);
 
     /* Get visible and IR light data */
-    rc = i2c_burst_read(i2c_dev, DT_INST_REG_ADDR(0),
+    rc = i2c_burst_read(si_data->i2c_dev, DT_INST_REG_ADDR(0),
             SI1132_REG_ALS_VIS_DATA, &vis_ir_data[0], sizeof(vis_ir_data));
     if (rc == 0) {
         si_data->vis_light = sys_le16_to_cpu(
                 vis_ir_data[0] << 8 | vis_ir_data[1]);
-        si_data->ir_light = sys_le_to_cpu(vis_ir_data[2] << 8 | vis_ir_data[3]);
+        si_data->ir_light = sys_le16_to_cpu(vis_ir_data[2] << 8 | vis_ir_data[3]);
 
         // TODO: apply factory calibration
     } else {
@@ -141,8 +141,8 @@ static int si1132_sample_fetch(const struct device *dev,
     }
 
     /* Get UV data */
-    rc = i2c_burst_read(i2c_dev, DT_INST_REG_ADDR(0),
-            SI1132_REG_AUX_DATA,, &uv_data[0] sizeof(uv_data));
+    rc = i2c_burst_read(si_data->i2c_dev, DT_INST_REG_ADDR(0),
+            SI1132_REG_AUX_DATA, &uv_data[0], sizeof(uv_data));
     if (rc == 0) {
         si_data->uv_index = sys_le16_to_cpu(uv_data[0] << 8 | uv_data[1]);
     } else {
@@ -163,24 +163,24 @@ static int si1132_channel_get(const struct device *dev,
     struct si1132_data *si_data = dev->data;
 
     switch (chan) {
-    SENSOR_CHAN_LIGHT:
+    case SENSOR_CHAN_LIGHT:
         /* NOTE: Currently only 6lx resolution is supported */
-        val->val1 = si_data->vis_data;
+        val->val1 = si_data->vis_light;
         val->val2 = 0;
 
         LOG_DBG("visible light (lx) = val1:%d, val2:%d", val->val1, val->val2);
         break;
-    SENSOR_CHAN_IR:
+    case SENSOR_CHAN_IR:
         /* NOTE: Currently only 6lx resolution is supported */
-        val->val1 = si_data->ir_data;
+        val->val1 = si_data->ir_light;
         val->val2 = 0;
 
         LOG_DBG("IR light (lx) = val1:%d, val2:%d", val->val1, val->val2);
         break;
-    SENSOR_CHAN_RED:
+    case SENSOR_CHAN_RED:
         /* NOTE: This is actualy UV index */
-        val->val1 = si_data->uv_data / 100;
-        val->val2 = si_data->uv_data % 100 * 10000;
+        val->val1 = si_data->uv_index / 100;
+        val->val2 = si_data->uv_index % 100 * 10000;
 
         LOG_DBG("UV index = val1:%d, val2:%d", val->val1, val->val2);
         break;
@@ -234,8 +234,8 @@ static int si1132_init(const struct device *dev)
     }
 
     if (ids[0] == SI1132_PART_ID) {
-        LOG_DBG("Si1132 device detected. PART_ID: %02x, REV_ID: %02x, 
-                SEQ_ID: %02x", ids[0], ids[1], ids[2]);
+        LOG_DBG("Si1132 device detected. PART_ID: %02x, REV_ID: %02x, "
+                "SEQ_ID: %02x", ids[0], ids[1], ids[2]);
     } else {
         LOG_ERR("Si1132 device not found");
         return -ENOTSUP;
