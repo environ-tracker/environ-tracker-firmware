@@ -178,7 +178,7 @@ static int si1132_channel_get(const struct device *dev,
         LOG_DBG("IR light (lx) = val1:%d, val2:%d", val->val1, val->val2);
         break;
     case SENSOR_CHAN_RED:
-        /* NOTE: This is actualy UV index */
+        /* NOTE: This is actually UV index */
         val->val1 = si_data->uv_index / 100;
         val->val2 = si_data->uv_index % 100 * 10000;
 
