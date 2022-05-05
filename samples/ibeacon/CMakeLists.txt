@@ -9,3 +9,11 @@ target_sources(app PRIVATE src/main.c)
 if(IBEACON_RSSI)
   zephyr_compile_definitions(IBEACON_RSSI=${IBEACON_RSSI})
 endif()
+
+if(IBEACON_MINOR)
+  zephyr_compile_definitions(IBEACON_MINOR=${IBEACON_MINOR})
+endif()
+
+if(IBEACON_MAJOR)
+  zephyr_compile_definitions(IBEACON_MAJOR=${IBEACON_MAJOR})
+endif()
