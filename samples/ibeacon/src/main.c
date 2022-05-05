@@ -12,9 +12,6 @@
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/hci.h>
 
-#ifndef IBEACON_RSSI
-#define IBEACON_RSSI 0xc8
-#endif
 
 #define IBEACON_UUID_1	0x7a,0xaf,0x1b,0x67
 #define IBEACON_UUID_2	0xf3,0xc0
@@ -28,6 +25,10 @@
 
 #ifndef IBEACON_MINOR
 #define IBEACON_MINOR	0x00,0x00
+#endif
+
+#ifndef IBEACON_RSSI
+#define IBEACON_RSSI 0xc8
 #endif
 
 /*
@@ -49,7 +50,7 @@ static const struct bt_data ad[] = {
 		      IBEACON_UUID_3, /* UUID[9..8] */
 		      IBEACON_UUID_4, /* UUID[7..6] */
 		      IBEACON_UUID_5, /* UUID[5..0] */
-		      IBEACON_MAJOR, /* Major */
+			  IBEACON_MAJOR, /* Major */
 		      IBEACON_MINOR, /* Minor */
 		      IBEACON_RSSI) /* Calibrated RSSI @ 1m */
 };
