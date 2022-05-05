@@ -17,3 +17,23 @@ endif()
 if(IBEACON_MAJOR)
   zephyr_compile_definitions(IBEACON_MAJOR=${IBEACON_MAJOR})
 endif()
+
+if (IBEACON_UUID_1)
+  zephyr_compile_definitions(IBEACON_UUID_1=${IBEACON_UUID_1})
+endif()
+
+if (IBEACON_UUID_2)
+  zephyr_compile_definitions(IBEACON_UUID_2=${IBEACON_UUID_2})
+endif()
+
+if (IBEACON_UUID_3)
+  zephyr_compile_definitions(IBEACON_UUID_3=${IBEACON_UUID_3})
+endif()
+
+if (IBEACON_UUID_4)
+  zephyr_compile_definitions(IBEACON_UUID_4=${IBEACON_UUID_4})
+endif()
+
+if (IBEACON_UUID_5)
+  zephyr_compile_definitions(IBEACON_UUID_5=${IBEACON_UUID_5})
+endif()

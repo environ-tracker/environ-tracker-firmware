@@ -12,12 +12,25 @@
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/hci.h>
 
-
+#ifndef IBEACON_UUID_1
 #define IBEACON_UUID_1	0x7a,0xaf,0x1b,0x67
+#endif
+
+#ifndef IBEACON_UUID_2
 #define IBEACON_UUID_2	0xf3,0xc0
+#endif
+
+#ifndef IBEACON_UUID_3
 #define IBEACON_UUID_3	0x4a,0x54
+#endif
+
+#ifndef IBEACON_UUID_4
 #define IBEACON_UUID_4	0xb3,0x14
+#endif
+
+#ifndef IBEACON_UUID_5
 #define IBEACON_UUID_5	0x58,0xff,0xf1,0x96,0x0a,0x40
+#endif
 
 #ifndef IBEACON_MAJOR
 #define IBEACON_MAJOR	0x00,0x00
@@ -35,7 +48,7 @@
  * Set iBeacon demo advertisement data. These values are for
  * demonstration only and must be changed for production environments!
  *
- * UUID:  18ee1516-016b-4bec-ad96-bcb96d166e97
+ * UUID:  7aaf1b67-f3c0-4a54-b314-58fff1960a40
  * Major: 0
  * Minor: 0
  * RSSI:  -56 dBm
