@@ -135,45 +135,43 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
     if (adv_type != BT_GAP_ADV_TYPE_ADV_NONCONN_IND || rssi < -70)
         return;
 
-    
-
-    // LOG_INF("rssi %d, adv_type %d", rssi, adv_type);
-
-    
+    /* Parse the data to see if it is an iBeacon */
     bt_data_parse(ad, parse_ad, beacon_data);    
-    if (beacon_data == NULL) {
-        // LOG_INF("AD wasn't an iBeacon packet");
+    if (beacon_data == NULL)
         return;
-    }
 
     /* Save RSSI and the time the packet was received */
     beacon_data->rssi = rssi;
     beacon_data->discovered_time = k_uptime_get();
 
-    if (bt_uuid_cmp(&supported_beacon_network.uuid, &beacon_data->uuid) != 0) {
-        LOG_WRN("Found unsupported UUID with maj: %d, min: %d", beacon_data->major, beacon_data->minor);
+    /* 
+     * See if the network is supported (by checking the UUID), if it is then 
+     * the beacon should be in the database 
+    */
+    if (bt_uuid_cmp(&supported_beacon_network.uuid, &beacon_data->uuid) != 0)
         return;
-    }
 
-    // /* Check if the ibeacon is already in the list */
+    /* Check if the ibeacon is already in the list */
     k_mutex_lock(&ibeacon_list_mutex, K_NO_WAIT);
     SYS_SLIST_FOR_EACH_CONTAINER(&ibeacon_list, tmp, next) {
         
-        if (beacon_data->major == tmp->major && beacon_data->minor == tmp->minor) {
-            LOG_INF("Found matching major: %d and minor %d", beacon_data->major, beacon_data->minor);
+        if (beacon_data->major == tmp->major && 
+                beacon_data->minor == tmp->minor) {
 
-            // k_mem_slab_free(&ibeacon_mem, &beacon_data);
             k_mutex_unlock(&ibeacon_list_mutex);
             return;
         }
     }
 
+    // DEBUG
     LOG_INF("New iBeacon");
 
+    // TODO: Maybe handle a non-alloc better??
     ret = k_mem_slab_alloc(&ibeacon_mem, &beacon_data, K_NO_WAIT);
     if (ret != 0) {
         LOG_ERR("Beacon packet couldn't be allocated (ret %d)", ret);
-        empty_ibeacon_list();
+
+        k_mutex_unlock(&ibeacon_list_mutex);
         return;
     }
 
@@ -214,7 +212,7 @@ K_TIMER_DEFINE(scan_restart_timer, scan_restart_handler, NULL);
  */
 void ble_localisation(void *a, void *b, void *c)
 {
-    int ret, beacons_found=0, missed_scans = 0;
+    int ret, beacons_found = 0, missed_scans = 0;
     struct ibeacon_data *beacon;
     struct sys_snode_t *node;
 
@@ -226,7 +224,7 @@ void ble_localisation(void *a, void *b, void *c)
         return;
     }
 
-    LOG_INF("Bluetooth initialised");
+    LOG_DBG("Bluetooth initialised");
 
     ret = bt_le_scan_start(&scan_params, scan_cb);
     if (ret) {
@@ -237,43 +235,46 @@ void ble_localisation(void *a, void *b, void *c)
     while (1) {
         k_msleep(SCAN_PERIOD);
 
-        // LOG_WRN("Scan period elapsed. Missed scans %d", missed_scans);
+        LOG_WRN("Scan period elapsed. Missed scans %d", missed_scans);
 
+        /* If enough beacons have been found then run the localisation algo */
         beacons_found = k_mem_slab_num_used_get(&ibeacon_mem);
         if (beacons_found < 3) {
             ++missed_scans;
 
             /* Missed too many scans. Stop scanning for 10 minutes */
-            // if (missed_scans >= MAX_MISSED_SCAN_PERIODS) {
+            if (missed_scans >= MAX_MISSED_SCAN_PERIODS) {
 
-            //     bt_le_scan_stop();
+                bt_le_scan_stop();
 
-            //     /* Scanning stopped, so empty the list */
-            //     empty_ibeacon_list();
+                /* Scanning stopped, so empty the list */
+                empty_ibeacon_list();
 
-            //     k_timer_start(&scan_restart_timer, K_MINUTES(10), K_FOREVER);
+                k_timer_start(&scan_restart_timer, K_MINUTES(10), K_FOREVER);
 
-            //     LOG_INF("Missed %d scanning periods, stopped iBeacon "
-            //             "scanning and suspending", missed_scans);
+                LOG_INF("Missed %d scanning periods, stopped iBeacon "
+                        "scanning and suspending", missed_scans);
 
-            //     k_thread_suspend(ble_localisation_id);
-            // }
+                k_thread_suspend(ble_localisation_id);
+
+                missed_scans = 0;
+            }
         } else {
             missed_scans = 0;
 
-            // k_mutex_lock(&ibeacon_list_mutex, K_MSEC(1));
-            // while ((node = sys_slist_get(&ibeacon_list)) != NULL) {
-            //     beacon = SYS_SLIST_CONTAINER(node, beacon, next);
+            k_mutex_lock(&ibeacon_list_mutex, K_MSEC(1));
+            while ((node = sys_slist_get(&ibeacon_list)) != NULL) {
+                beacon = SYS_SLIST_CONTAINER(node, beacon, next);
                 
-            //     LOG_INF("Beacon major: %u, minor %u, rssi %d", beacon->major, 
-            //             beacon->minor, beacon->rssi);
+                // DEBUG
+                LOG_INF("Beacon major: %u, minor %u, rssi %d", beacon->major, 
+                        beacon->minor, beacon->rssi);
                 
-            //     k_mem_slab_free(&ibeacon_mem, &beacon);
-            // }
-            // k_mutex_unlock(&ibeacon_list_mutex);
+                // TODO: Find a position estimate
 
-            // TODO: Find a position estimate
-
+                k_mem_slab_free(&ibeacon_mem, &beacon);
+            }
+            k_mutex_unlock(&ibeacon_list_mutex);
         }
     }
 }
