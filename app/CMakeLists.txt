@@ -6,4 +6,4 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(environ_tracker)
 
 include_directories(inc)
-target_sources(app PRIVATE src/shell.c src/ble_localisation.c src/environ.c)
+target_sources(app PRIVATE src/shell.c src/ble_localisation.c) #src/environ.c)
