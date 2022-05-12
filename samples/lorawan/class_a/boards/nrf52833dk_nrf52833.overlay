@@ -1,0 +1,23 @@
+/ {
+    aliases {
+        lora0 = &lora;
+    };
+};
+
+&spi1 {
+    compatible = "nordic,nrf-spi";
+    status = "okay";
+    sck-pin = <17>;
+    mosi-pin = <20>;
+    miso-pin = <22>;
+    cs-gpios = <&gpio0 29 GPIO_ACTIVE_LOW>;
+    lora: sx1262@0 {
+        compatible = "semtech,sx1262";
+        reg = <0>;
+        label = "SX1262";
+        reset-gpios = <&gpio0 31 GPIO_ACTIVE_LOW>;
+        busy-gpios = <&gpio1 2 GPIO_ACTIVE_LOW>;
+        dio1-gpios = <&gpio1 4 GPIO_ACTIVE_LOW>;
+        spi-max-frequency = <1000000>;
+    };
+};
