@@ -1,0 +1,76 @@
+#ifndef _LC709204F_H_
+#define _LC709204F_H_
+
+/* LC709204F register addresses */
+#define LC709204F_REG_TIME_TO_EMPTY             0x03
+#define LC709204F_REG_BEFORE_RSOC               0x04
+#define LC709204F_REG_TIME_TO_FULL              0x05
+#define LC709204F_REG_TSENSE1_THERM_B           0x06
+#define LC709204F_REG_INITIAL_RSOC              0x07
+#define LC709204F_REG_CELL_TEMP                 0x08
+#define LC709204F_REG_CELL_VOLTAGE              0x09
+#define LC709204F_REG_CURRENT_DIRECTION         0x0A
+#define LC709204F_REG_APA                       0x0B
+#define LC709204F_REG_APT                       0x0C
+#define LC709204F_REG_RSOC                      0x0D
+#define LC709204F_REG_TSENSE2_THERM_B           0x0E
+#define LC709204F_REG_ITE                       0x0F
+#define LC709204F_REG_IC_VERSION                0x11
+#define LC709204F_REG_CHANGE_OF_PARAMETER       0x12
+#define LC709204F_REG_ALARM_LOW_RSOC            0x13
+#define LC709204F_REG_ALARM_LOW_VOLTAGE         0x14
+#define LC709204F_REG_IC_POWER_MODE             0x15
+#define LC709204F_REG_STATUS_BIT                0x16
+#define LC709204F_REG_CYCLE_COUNT               0x17
+#define LC709204F_REG_BATTERY_STATUS            0x19
+#define LC709204F_REG_NUMBER_OF_PARAMETER       0x1A
+#define LC709204F_REG_TERMINATION_CURRENT_RATE  0x1C
+#define LC709204F_REG_EMPTY_CELL_VOLTAGE        0x1D
+#define LC709204F_REG_ITE_OFFSET                0x1E
+#define LC709204F_REG_ALARM_HIGH_VOLTAGE        0x1F
+#define LC709204F_REG_ALARM_LOW_TEMP            0x20
+#define LC709204F_REG_ALARM_HIGH_TEMP           0x21
+#define LC709204F_REG_TOTAL_RUN_TIME_LOW_2B     0x24
+#define LC709204F_REG_TOTAL_RUN_TIME_HIGH_2B    0x25
+#define LC709204F_REG_ACCUM_TEMPERATURE_LOW_2B  0x26
+#define LC709204F_REG_ACCUM_TEMPERATURE_HIGH_2B 0x27
+#define LC709204F_REG_ACCUM_RSOC_LOW_2B         0x28
+#define LC709204F_REG_ACCUM_RSOC_HIGH_2B        0x29
+#define LC709204F_REG_MAX_CELL_VOLTAGE          0x2A
+#define LC709204F_REG_MIN_CELL_VOLTAGE          0x2B
+#define LC709204F_REG_MAX_CELL_TEMP             0x2C
+#define LC709204F_REG_MIN_CELL_TEMP             0x2D
+#define LC709204F_REG_AMBIENT_TEMP              0x30
+#define LC709204F_REG_STATE_OF_HEALTH           0x32
+#define LC709204F_REG_USER_ID_LOW_2B            0x36
+#define LC709204F_REG_USER_ID_HIGH_2B           0x37
+
+/* LC709204F RSOC init commands */
+#define LC709204F_CMD_RSOC_INIT_1_SAMPLE        0xAA55
+#define LC709204F_CMD_RSOC_INIT_2_SAMPLE        0xAA56
+#define LC709204F_CMD_RSOC_INIT_3_SAMPLE        0xAA57
+#define LC709204F_CMD_RSOC_INIT_4_SAMPLE        0xAA58
+
+/* LC709204F battery types */
+#define LC709204F_BATTERY_01    0x00
+#define LC709204F_BATTERY_04    0x01
+#define LC709204F_BATTERY_05    0x02
+#define LC709204F_BATTERY_06    0x03
+#define LC709204F_BATTERY_07    0x04
+
+/* LC709204F status bit controls */
+#define LC709204F_TSENSE1_CTRL  (1 << 0)
+#define LC709204F_TSENSE2_CTRL  (1 << 1)
+
+/* LC709204F battery status bits */
+#define LC709204F_STATUS_DISCHARGING    (1 << 6)
+#define LC709204F_STATUS_INITIALIZED    (1 << 7)
+
+/* LC709204F alarm status bits */
+#define LC709204F_ALARM_LOW_TEMP        (1 << 8)
+#define LC709204F_ALARM_LOW_RSOC        (1 << 9)
+#define LC709204F_ALARM_LOW_VOLTAGE     (1 << 11)
+#define LC709204F_ALARM_HIGH_TEMP       (1 << 12)
+#define LC709204F_ALARM_HIGH_VOLTAGE    (1 << 15)
+
+#endif /* _LC709204F_H_ */
