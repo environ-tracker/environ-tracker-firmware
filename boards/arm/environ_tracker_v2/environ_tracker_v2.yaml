@@ -1,0 +1,14 @@
+identifier: environ_tracker_v2
+name: Environ Tracker v2
+type: mcu
+arch: arm
+ram: 256
+flash: 512
+toolchain:
+  - zephyr
+supported:
+  - i2c
+  - spi
+  - gpio
+  - uart
+  - ble

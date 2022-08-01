@@ -1,0 +1,9 @@
+if BOARD_ENVIRON_TRACKER_V2
+
+config BOARD
+	default "environ_tracker_v2"
+
+config BT_CTLR
+	default BT
+
+endif # BOARD_ENVIRON_TRACKER
