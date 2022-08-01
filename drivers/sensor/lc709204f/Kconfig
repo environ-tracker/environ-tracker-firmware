@@ -1,0 +1,5 @@
+config LC709204F
+    bool "LC709204F Li-ion/Li+ Battery Fuel Gauge"
+    depends on I2C
+    help
+        Enable I2C-based driver for LC709204F Li-ion/Li+ Battery Fuel Gauge.
