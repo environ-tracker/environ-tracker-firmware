@@ -1,0 +1,120 @@
+/ {
+    aliases {
+        led0 = &led0;
+        sw0 = &button0;
+    };
+
+    // NOTE: this may not be the best way to offset the gain
+    mic {
+        compatible = "voltage-divider";
+        io-channels = <&adc 5>;
+        output-ohms = <10000>;
+        full-ohms = <(10000 + 52200)>;
+    };
+
+    leds {
+        compatible = "gpio-leds";
+
+        led0: led_red {
+            gpios = <&sx1508b 7 GPIO_ACTIVE_LOW>;
+            label = "led-red";
+        };
+
+        led1: led_green {
+            gpios = <&sx1508b 3 GPIO_ACTIVE_LOW>;
+            label = "led-green";
+        }
+    };
+
+    buttons {
+        compatible = "gpio-keys";
+
+        button1: button_1 {
+            gpios = <&sx1508b 2 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+            label = "button-1";
+        };
+        
+        button2: button_2 {
+            gpios = <&sx1508b 1 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+            label = "button-2";
+        };
+        
+        button4: button_4 {
+            gpios = <&sx1508b 5 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+            label = "button-4";
+        };
+    };
+
+    daughter_vdd_pwr: daughter-vdd-pwr-ctrl {
+        compatible = "regulator-fixed";
+        label = "daughter-vdd-pwr-ctrl";
+        regulator-name = "daughter-vdd-pwr-ctrl";
+        enable-gpios = <&sx1508b 4 GPIO_ACTIVE_HIGH>;
+    }
+};
+
+&adc {
+    status = "okay";
+};
+
+&shieldi2c {
+    status = "okay";
+
+    sx1508b: sx1508b@20 {
+        compatible = "semtech,sx1509b";
+        reg = <0x20>;
+        label = "GPIO_CTRL";
+        gpio-controller;
+        #gpio-cells = <2>;
+        ngpios = <8>;
+        nint-gpios = <&environ_tracker_header 1 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+        /* Init all outputs to high except for red led */
+        init-out-high = <0x7f>;
+        init-out-low = <0x80>;
+    };
+
+    bme680: bme680@76 {
+        compatible = "bosch,bme680";
+        reg = <0x76>;
+        label = "BME680";
+        vin-supply = <&daughter_vdd_pwr>;
+    };
+
+    lsm6dso: lsm6dso@6a {
+        compatible = "st,lsm6dso";
+        reg = <0x6a>;
+        label = "LSM6DSO";
+        irq-gpios = <&sx1508b 0 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+    };
+    
+    lis3mdl: lis3mdl@1c {
+        compatible = "st,lis3mdl-magn";
+        reg = <1c>;
+        label = "LIS3MDL";
+    };
+
+    si1132: si1132@60 {
+        compatible = "silabs,si1132";
+        reg = <0x60>;
+        label = "Si1132";
+        vin-supply = <&daughter_vdd_pwr>;
+    };
+
+    ssd1306: ssd1306@3c {
+        compatible = "solomon,ssd1306fb";
+        reg = <0x3c>;
+        label = "SSD1306";
+        vin-supply = <&daughter_vdd_pwr>;
+        height = <32>;
+        width = <128>;
+        segment-offset = <0>;
+        page-offset = <0>;
+        display-offset = <0>;
+        multiplex-ratio = <31>;
+        prechargep = <0xd1>;
+        segment-remap;
+        com-invdir;
+        com-sequential;
+    reset-gpios = <&sx1508b 6 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+    };
+};
