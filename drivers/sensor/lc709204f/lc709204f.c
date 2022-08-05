@@ -14,13 +14,24 @@ LOG_MODULE_REGISTER(lc709204f, CONFIG_SENSOR_LOG_LEVEL);
 #define DT_DRV_COMPAT onsemi_lc709204f
 
 
-
-static int lc709204f_write_register(const struct i2c_dt_spec *spec, 
+/**
+ * @brief Write to a 16b register
+ * 
+ * @param spec The I2C bus devicetree spec
+ * @param reg_addr Register address to write to
+ * @param value Value to write to register
+ * @return 0 if successful, or negative error code from I2C API
+ */
+static int lc709204f_reg_write(const struct i2c_dt_spec *spec, 
         uint8_t reg_addr, uint16_t value) 
 {
-    uint8_t buffer[3] = {reg_addr, value & 0xff00, value & 00ff};
+    // Addresses added to make CRC-8 calculation easier
+    uint8_t buf[5] = {spec->addr, reg_addr, value, value >> 8, 0};
 
-    return i2c_reg_write_dt(spec, buffer, 3);
+    // Calculate CRC-8
+    buf[4] = crc8(buf, 4, 0x07, 0, false);
+
+    return i2c_write_dt(spec, &buf[1], 4);
 }
 
 static int lc709204f_sample_fetch(const struct device *dev, 
