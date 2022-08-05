@@ -194,7 +194,7 @@ static int lc709204f_channel_get(const struct device *dev,
         break;
     case SENSOR_CHAN_GAUGE_VOLTAGE:
         val->val1 = data->voltage / 1000;
-        val->val2 = data->voltageq % 1000 * 1000;
+        val->val2 = data->voltage % 1000 * 1000;
         break;
     default:
         return -ENOTSUP;
