@@ -3,6 +3,8 @@
 
 #include <drivers/i2c.h>
 
+#define LC709204F_0C_VALUE      0xAAC
+
 /* Commands */
 enum lc709204f_commands {
     TIME_TO_EMPTY               = 0x03,

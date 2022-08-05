@@ -87,6 +87,18 @@ static int lc709204f_32b_reg_read(const struct i2c_dt_spec *spec,
     return 0;
 }
 
+/**
+ * @brief Converts the LC709204F's temperature representation to units of 0.1 
+ *        degrees celsius
+ * 
+ * @param lc_temperature LC709204F temperature value
+ * @return The LC709204F temperature value in 0.1 degrees celsius 
+ */
+static int convert_lc709204f_temperature_to_celsius(uint16_t lc_temperature)
+{
+    return lc_temperature - LC709204F_0C_VALUE;
+}
+
 static int lc709204f_sample_fetch(const struct device *dev, 
         enum sensor_channel chan) 
 {
