@@ -114,7 +114,7 @@ static int lc709204f_sample_fetch(const struct device *dev,
     }
 
     for (int i = 0; i < ARRAY_SIZE(cmds); ++i) {
-        int rc = lc709204f_reg_read(config->i2c, (uint8_t)cmds[i].command, 
+        int rc = lc709204f_reg_read(&config->i2c, (uint8_t)cmds[i].command, 
                 cmds[i].dest);
         if (rc != 0) {
             LOG_ERR("Failed to read channel #%d with cmd: %02x", 
@@ -234,7 +234,7 @@ static int lc709204f_init(const struct device *dev)
     }
 
     /* Check if POR event */
-    err = lc709204f_reg_read(config->i2c, BATTERY_STATUS, &status);
+    err = lc709204f_reg_read(&config->i2c, BATTERY_STATUS, &status);
     if (err != 0) {
         return err;
     }
@@ -245,7 +245,7 @@ static int lc709204f_init(const struct device *dev)
     }
 
     /* Write APA values */
-    err = lc709204f_reg_write(config->i2c, APA, config->apa_value);
+    err = lc709204f_reg_write(&config->i2c, APA, config->apa_value);
     if (err != 0) {
         return err;
     }
@@ -257,7 +257,7 @@ static int lc709204f_init(const struct device *dev)
     }
 
     /* Write battery type */
-    err = lc709204f_reg_write(config->i2c, CHANGE_OF_PARAMETER, tmp);
+    err = lc709204f_reg_write(&config->i2c, CHANGE_OF_PARAMETER, tmp);
     if (err != 0) {
         return err;
     }
@@ -267,27 +267,27 @@ static int lc709204f_init(const struct device *dev)
             config->design_capacity;
 
     /* Write termination charging rate */
-    err = lc709204f_reg_write(config->i2c, TERMINATION_CURRENT_RATE, tmp);
+    err = lc709204f_reg_write(&config->i2c, TERMINATION_CURRENT_RATE, tmp);
     if (err != 0) {
         return err;
     }
 
     /* Write empty cell voltage */
-    err = lc709204f_reg_write(config->i2c, EMPTY_CELL_VOLTAGE, 
+    err = lc709204f_reg_write(&config->i2c, EMPTY_CELL_VOLTAGE, 
             config->empty_voltage);
     if (err != 0) {
         return err;
     }
 
     /* Set device to Operational Mode */
-    err = lc709204f_reg_write(config->i2c, IC_POWER_MODE, 0x0001);
+    err = lc709204f_reg_write(&config->i2c, IC_POWER_MODE, 0x0001);
     if (err != 0) {
         return err;
     }
 
     /* Clear POR bit */
     status &= ~STATUS_INITIALIZED;
-    err = lc709204f_reg_write(config->i2c, BATTERY_STATUS, status);
+    err = lc709204f_reg_write(&config->i2c, BATTERY_STATUS, status);
     if (err != 0) {
         return err;
     }
