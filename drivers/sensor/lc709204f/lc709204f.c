@@ -189,15 +189,24 @@ static int lc709204f_init(const struct device *dev)
     }
 }
 
-#define LC709204F_DEFINE(inst)                                      \
+static const struct sensor_driver_api lc709204f_api_funcs = {
+    .sample_fetch = lc709204f_sample_fetch,
+    .channel_get = lc709204f_channel_get,
+};
+
+#define LC709204F_INIT(inst)                                        \
     static struct lc709204f_data lc709204f_data_##inst;             \
     static const struct lc709204f_config lc709204f_config_##inst = {\
-        .i2c = I2C_DT_SPEC_INST_GET(inst),                          \
+        .bus_name = DT_INST_BUS_LABEL(inst),                        \
+        .design_capacity = DT_INST_PROP(inst, design_capacity),     \
+        .design_voltage = DT_INST_PROP(inst, design_voltage),       \
+        .desired_voltage = DT_INST_PROP(inst, desired_voltage),     \
+        .empty_voltage = DT_INST_PROP(inst, empty_voltage),         \
+        .desired_charging_current = DT_INST_PROP(inst,              \
+                desired_charging_current),                          \
+        .charging_termination_current = DT_INST_PROP(inst, chg_term_current), \
         .apa_value = DT_INST_PROP(inst, apa_value),                 \
         .battery_type = DT_INST_PROP(inst, battery_type),           \
-        .term_current_rate = DT_INST_PROP(inst, chg_term_current),  \
-        .empty_cell_voltage = DT_INST_PROP(inst, empty_voltage),    \
-        .battery_specs = {0},                                       \ // TODO:
     };                                                              \
     DEVICE_DT_INST_DEFINE(inst,                                     \
             lc709204f_init,                                         \
@@ -208,4 +217,4 @@ static int lc709204f_init(const struct device *dev)
             CONFIG_SENSOR_INIT_PRIORITY,                            \
             &lc709204f_api_funcs);
 
-DT_INST_FOREACH_STATUS_OKAY(LC709204F_DEFINE)
+DT_INST_FOREACH_STATUS_OKAY(LC709204F_INIT)
