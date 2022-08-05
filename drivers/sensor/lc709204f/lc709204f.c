@@ -210,15 +210,15 @@ static int lc709204f_convert_battery_type_to_param(int battery_type)
 {
     switch (battery_type) {
     case 1:
-        return LC709204F_BATTERY_01;
+        return BATTERY_01;
     case 4:
-        return LC709204F_BATTERY_04;
+        return BATTERY_04;
     case 5:
-        return LC709204F_BATTERY_05;
+        return BATTERY_05;
     case 6:
-        return LC709204F_BATTERY_06;
+        return BATTERY_06;
     case 7:
-        return LC709204F_BATTERY_07;
+        return BATTERY_07;
     default:
         return -EINVAL;
     }
