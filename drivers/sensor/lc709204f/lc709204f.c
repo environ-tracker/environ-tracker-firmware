@@ -73,10 +73,60 @@ static int convert_lc709204f_temperature_to_celsius(uint16_t lc_temperature)
     return lc_temperature - LC709204F_0C_VALUE;
 }
 
+/**
+ * @brief Fetches all on device channel data at once
+ * NOTE: Only SENSOR_CHAN_ALL is supported
+ * 
+ * @param dev Device to fetch data from
+ * @param chan Channel to fetch. (Only SENSOR_CHAN_ALL supported)
+ * @return 0 on success, negative error code on failure
+ */
 static int lc709204f_sample_fetch(const struct device *dev, 
         enum sensor_channel chan) 
 {
+    struct lc709204f_data *data = dev->data;
+    struct lc709204f_config *config = dev->config;
+    uint8_t time_buf[2] = {0};
 
+    struct {
+        enum lc709204f_commands command;
+        uint16_t *dest;
+    } cmds[] = {
+        { CELL_VOLTAGE, &data->voltage },
+        { MAX_CELL_VOLTAGE, &data->max_voltage },
+        { MIN_CELL_VOLTAGE, &data->min_voltage },
+        { ITE, &data->state_of_charge },
+        { STATE_OF_HEALTH, &data->state_of_health },
+        { TIME_TO_FULL, &data->time_to_full },
+        { TIME_TO_EMPTY, &data->time_to_empty },
+        { CYCLE_COUNT, &data->cycle_count },
+        { CELL_TEMP, &data->cell_temp },
+        { MAX_CELL_TEMP, &data->max_cell_temp },
+        { MIN_CELL_TEMP, &data->min_cell_temp },
+        { AMBIENT_TEMP, &data->ambient_temp },
+        { TOTAL_RUN_TIME_LOW_2B, &time_buf[0] },
+        { TOTAL_RUN_TIME_HIGH_2B, &time_buf[1] },
+    };
+
+    if (chan != SENSOR_CHAN_ALL) {
+        LOG_ERR("Only SENSOR_CHAN_ALL is supported for fetches");
+        return -ENOTSUP;
+    }
+
+    for (int i = 0; i < ARRAY_SIZE(cmds); ++i) {
+        int rc = lc709204f_reg_read(config->i2c, (uint8_t)cmds[i].command, 
+                cmds[i].dest);
+        if (rc != 0) {
+            LOG_ERR("Failed to read channel #%d with cmd: %02x", 
+                    cmds[i].command, cmds[i].dest);
+            return rc;
+        }
+    }
+
+    data->total_run_time = (time_buf[1] << 16) | time_buf[0];
+    data->total_run_time = sys_le32_to_cpu(data->total_run_time);    
+
+    return 0;
 }
 
 // TODO: check val2's 
