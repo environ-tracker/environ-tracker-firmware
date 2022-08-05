@@ -43,7 +43,7 @@ static int lc709204f_reg_write(const struct i2c_dt_spec *spec,
  * @param value Place to put the value on success
  * @return 0 if successful, or negative error code from I2C API
  */
-static int lc709204f_16b_reg_read(const struct i2c_dt_spec *spec,
+static int lc709204f_reg_read(const struct i2c_dt_spec *spec,
         uint8_t reg_addr, uint16_t *value)
 {
     uint8_t buf[3] = {0};
@@ -56,34 +56,8 @@ static int lc709204f_16b_reg_read(const struct i2c_dt_spec *spec,
 
     // Save register data in sys endianness
     *value = (buf[1] << 8) | buf[0];
-    *value = le16_to_sys_cpu(*value);
+    *value = sys_le16_to_cpu(*value);
 
-    return 0;
-}
-
-/**
- * @brief Read a 32b register value
- * NOTE: Currently teh CRC-8 value is not checked
- * 
- * @param spec The I2C bus devicetree spec
- * @param reg_addr Register address to read
- * @param value Place to put the value on success
- * @return 0 if successful, or negative error code from I2C API
- */
-static int lc709204f_32b_reg_read(const struct i2c_dt_spec *spec,
-        uint8_t reg_addr, uint32_t *value)
-{
-    // Addresses added to make CRC-8 check easier
-    uint8_t buf[5] = {0};
-
-    int err = i2c_burst_read_dt(spec, reg_addr, buf, 5);
-    if (err != 0) {
-        return err;
-    }
-
-    // Save register data in sys endianness
-    *value = (buf[3] << (3 * 8)) | (buf[2] << (2 * 8)) | (buf[1] << 8) | buf[0];
-    *value = le32_to_sys_cpu(*value);
     return 0;
 }
 
