@@ -122,7 +122,13 @@ static int lc709204f_init(const struct device *dev)
     struct lc709204f_config *config = dev->config;
     int err;
 
-    if (!device_is_ready(config->bus)) {
+    data->i2c = device_get_binding(config->bus_name);
+    if (!data->i2c) {
+        LOG_ERR("Couldn't get pointer to %s device", config->bus_name);
+        return -ENODEV;
+    }
+
+    if (!device_is_ready(data->i2c)) {
         LOG_ERR("i2c bus is not ready");
         return -ENODEV;
     }
