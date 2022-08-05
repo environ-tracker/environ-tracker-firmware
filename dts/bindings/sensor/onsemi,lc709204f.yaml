@@ -7,27 +7,48 @@ include: i2c-device.yaml
 
 properties:
 
-  battery-type:
+  design-capacity:
     type: int
     required: true
-    description: The type of battery being used. 
-        (Must be one of [1, 4, 5, 6, 7])
+    description: The label capacity of the cell in mAh
+
+  design-voltage:
+    type: int
+    required: true
+    description: The label voltage of the cell in mV
+
+  desired-voltage:
+    type: int
+    required: true
+    description: The desired voltage of the cell in mV
 
   empty-voltage:
     type: int
     required: true
     description: The empty voltage of the cell in mV
 
+  desired-charging-current:
+    type: int
+    required: true
+    description: The desired charging current of the cell in mA
+
   chg-term-current:
     type: int
     required: true
-    description: The charge termination current in 0.01C
+    description: The charge termination current in uA
 
   apa-value:
     type: int
     required: true
     description: Adjustment Pack Application values. Used to adjust gauge to
         connected battery
+
+  battery-type:
+    type: int
+    enum: [1, 4, 5, 6, 7]
+    required: true
+    description: The type of battery being used. 
+        (Must be one of [1, 4, 5, 6, 7])
 
   apt-value:
     type: int
