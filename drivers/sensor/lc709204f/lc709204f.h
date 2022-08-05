@@ -72,6 +72,10 @@ enum lc709204f_supported_battery_types {
 enum lc709204f_status_bit_masks {
     TSENSE1_CTRL        = 1 << 0,
     TSENSE2_CTRL        = 1 << 1,
+};
+
+/* Status bit masks */
+enum lc709204f_battery_status_bit_masks {  
     STATUS_DISCHARGING  = 1 << 6,
     STATUS_INITIALIZED  = 1 << 7,
     ALARM_LOW_TEMP      = 1 << 8,
