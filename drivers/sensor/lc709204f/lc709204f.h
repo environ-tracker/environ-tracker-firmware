@@ -9,7 +9,7 @@
 enum lc709204f_commands {
     TIME_TO_EMPTY               = 0x03,
     BEFORE_RSOC                 = 0x04,
-    REG_TIME_TO_FULL            = 0x05,
+    TIME_TO_FULL                = 0x05,
     TSENSE1_THERM_B             = 0x06,
     INITIAL_RSOC                = 0x07,
     CELL_TEMP                   = 0x08,
