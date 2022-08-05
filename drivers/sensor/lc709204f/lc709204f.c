@@ -1,14 +1,12 @@
-#define DT_DRV_COMPAT onsemi_lc709204f
-
-#include <kernel.h>
+// #include <kernel.h>
 #include <device.h>
 #include <init.h>
-#include <logging/log.h>
 #include <drivers/i2c.h>
 #include <drivers/sensor.h>
+#include <sys/byteorder.h>
+#include <sys/crc.h>
 
-#include "lc709204f.h"
-
+#include <logging/log.h>
 LOG_MODULE_REGISTER(lc709204f, CONFIG_SENSOR_LOG_LEVEL);
 
 #include "lc709204f.h"
