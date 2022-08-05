@@ -328,6 +328,6 @@ static const struct sensor_driver_api lc709204f_api_funcs = {
             &lc709204f_config_##inst,                               \
             POST_KERNEL,                                            \
             CONFIG_SENSOR_INIT_PRIORITY,                            \
-            &lc709204f_api_funcs);
+            &lc709204f_api_funcs)
 
-DT_INST_FOREACH_STATUS_OKAY(LC709204F_INIT)
+DT_INST_FOREACH_STATUS_OKAY(LC709204F_INIT);
