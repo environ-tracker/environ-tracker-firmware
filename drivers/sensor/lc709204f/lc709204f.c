@@ -66,11 +66,14 @@ static int lc709204f_reg_read(const struct i2c_dt_spec *spec,
  *        degrees celsius
  * 
  * @param lc_temperature LC709204F temperature value
- * @return The LC709204F temperature value in 0.1 degrees celsius 
+ * @param sensor_val Place to put the value on success
  */
-static int convert_lc709204f_temperature_to_celsius(uint16_t lc_temperature)
+static void lc709204f_temperature_to_sensor_val(uint16_t lc_temperature, struct sensor_value *sensor_val)
 {
-    return lc_temperature - LC709204F_0C_VALUE;
+    int temperature = lc_temperature - LC709204F_0C_VALUE;
+    
+    sensor_val->val1 = temperature / 10;
+    sensor_val->val2 = (temperature % 10) * 100000;
 }
 
 /**
@@ -129,66 +132,72 @@ static int lc709204f_sample_fetch(const struct device *dev,
     return 0;
 }
 
-// TODO: check val2's 
+/**
+ * @brief Retrieve the sensors values
+ * 
+ * @param dev Device to access
+ * @param chan Channel to read
+ * @param val Returns the sensor value read on success
+ * @return 0 on success
+ * @return -ENOTSUP for unsupported channels 
+ */
 static int lc709204f_channel_get(const struct device *dev, 
         enum sensor_channel chan, struct sensor_value *val)
 {
-    struct battery_data specs = dev->config->battery_specs;
-    struct lc709204f_data data = dev->data;
+    struct lc709204f_config *config = dev->config;
+    struct lc709204f_data *data = dev->data;
 
     switch (chan) {
     case SENSOR_CHAN_GAUGE_TEMP:
-        val->val1 = data.temp;
-        val->val2 = 0;
+        lc709204f_temperature_to_sensor_val(data->cell_temp, val);
         break;
     case SENSOR_CHAN_GAUGE_STATE_OF_CHARGE:
-        val->val1 = data.state_of_charge / 10;
-        val->val2 = data.state_of_charge % 10;
+        val->val1 = data->state_of_charge / 10;
+        val->val2 = data->state_of_charge % 10 * 100000;
         break;
     case SENSOR_CHAN_GAUGE_FULL_CHARGE_CAPACITY:
-        val->val1 = specs.capacity;
+        val->val1 = config->design_capacity;
         val->val2 = 0;
         break;
     case SENSOR_CHAN_GAUGE_REMAINING_CHARGE_CAPACITY:
-        double remain_capacity = specs.capacity * data.state_of_charge / 1000;
-
-        val->val1 = (uint16_t)remain_capacity;
-        val->val2 = (uint16_t)((remain_capacity % 1000) * 1000);
+        val->val1 = config->design_capacity * data->state_of_charge / 1000;
+        val->val2 = config->design_capacity * data->state_of_charge % 1000 
+                * 1000;
         break;
     case SENSOR_CHAN_GAUGE_STATE_OF_HEALTH:
-        val->val1 = data.state_of_health;
+        val->val1 = data->state_of_health;
         val->val2 = 0;
         break;
     case SENSOR_CHAN_GAUGE_TIME_TO_EMPTY:
-        val->val1 = data.time_to_empty;
+        val->val1 = data->time_to_empty;
         val->val2 = 0;
         break;
     case SENSOR_CHAN_GAUGE_TIME_TO_FULL:
-        val->val1 = data.time_to_full;
+        val->val1 = data->time_to_full;
         val->val2 = 0;
         break;
     case SENSOR_CHAN_GAUGE_CYCLE_COUNT:
-        val->val1 = data.cycle_count;
+        val->val1 = data->cycle_count;
         val->val2 = 0;
         break;
     case SENSOR_CHAN_GAUGE_DESIGN_VOLTAGE:
-        val->val1 = specs.max_voltage / 1000;
-        val->val2 = specs.max_voltage % 1000;
+        val->val1 = config->design_voltage / 1000;
+        val->val2 = config->design_voltage % 1000 * 1000;
         break;
     case SENSOR_CHAN_GAUGE_DESIRED_VOLTAGE:
-        val->val1 = specs.nom_voltage / 1000;
-        val->val2 = specs.nom_voltage % 1000;
+        val->val1 = config->desired_voltage / 1000;
+        val->val2 = config->desired_voltage % 1000 * 1000;
         break;
     case SENSOR_CHAN_GAUGE_DESIRED_CHARGING_CURRENT:
-        val->val1 = specs.charge_current / 1000;
-        val->val2 = specs.charge_current % 1000;
+        val->val1 = config->desired_charging_current;
+        val->val2 = 0;
         break;
     case SENSOR_CHAN_GAUGE_VOLTAGE:
-        val->val1 = data.voltage / 1000;
-        val->val2 = data.voltageq % 1000;
+        val->val1 = data->voltage / 1000;
+        val->val2 = data->voltageq % 1000 * 1000;
         break;
     default:
-        return -EINVAL;
+        return -ENOTSUP;
     }
 
     return 0;
