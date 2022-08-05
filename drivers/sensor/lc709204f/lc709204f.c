@@ -215,45 +215,79 @@ static int lc709204f_convert_battery_type_to_param(int battery_type)
     }
 }
 
-// TODO: add overflow checks for config vals
+/**
+ * @brief Initialise the LC709204F after a Power On Reset (POR) event
+ * 
+ * @param dev Device to initialise
+ * @return 0 on success, negative error code on failure
+ */
 static int lc709204f_init(const struct device *dev)
 {
     struct lc709204f_data *data = dev->data;
     struct lc709204f_config *config = dev->config;
     int err;
+    uint16_t status, tmp;
 
     if (!device_is_ready(config->i2c.bus)) {
         LOG_ERR("i2c bus is not ready");
         return -ENODEV;
     }
 
-    err = lc709204f_write_register(config->bus, LC709204F_REG_APA, config->apa_value);
+    /* Check if POR event */
+    err = lc709204f_reg_read(config->i2c, BATTERY_STATUS, &status);
     if (err != 0) {
         return err;
     }
 
-    int battery_type_param = lc709204f_convert_battery_type_to_param(config->battery_type);
-    if (battery_type_param < 0) {
-        return battery_type_param;
+    if (!(status & STATUS_INITIALIZED)) {
+        LOG_DBG("No POR event detected - skip device configuration");
+        return 0;
     }
 
-    err = lc709204f_write_register(drv_data->i2c_spec, LC709204F_REG_CHANGE_OF_PARAMETER, battery_type_param);
+    /* Write APA values */
+    err = lc709204f_reg_write(config->i2c, APA, config->apa_value);
     if (err != 0) {
         return err;
     }
 
-    err = lc709204f_write_register(drv_data->i2c_spec, LC709204F_REG_TERMINATION_CURRENT_RATE, config->term_current_rate);
+    /* Get battery value from battery type config */
+    tmp = lc709204f_convert_battery_type_to_param(config->battery_type);
+    if (tmp < 0) {
+        return tmp;
+    }
+
+    /* Write battery type */
+    err = lc709204f_reg_write(config->i2c, CHANGE_OF_PARAMETER, tmp);
     if (err != 0) {
         return err;
     }
 
-    err = lc709204f_write_register(config->bus, LC709204F_REG_EMPTY_CELL_VOLTAGE, config->empty_cell_voltage);
+    /* Convert charging termination current in mA to 0.1C */
+    tmp = (config->charging_termination_current * 100) / 
+            config->design_capacity;
+
+    /* Write termination charging rate */
+    err = lc709204f_reg_write(config->i2c, TERMINATION_CURRENT_RATE, tmp);
     if (err != 0) {
         return err;
     }
 
+    /* Write empty cell voltage */
+    err = lc709204f_reg_write(config->i2c, EMPTY_CELL_VOLTAGE, 
+            config->empty_voltage);
+    if (err != 0) {
+        return err;
+    }
 
-    err = lc709204f_write_register(config->bus, LC709204F_REG_IC_POWER_MODE, 0x0001);
+    /* Set device to Operational Mode */
+    err = lc709204f_reg_write(config->i2c, IC_POWER_MODE, 0x0001);
+    if (err != 0) {
+        return err;
+    }
+
+    /* Clear POR bit */
+    status &= ~STATUS_INITIALIZED;
+    err = lc709204f_reg_write(config->i2c, BATTERY_STATUS, status);
     if (err != 0) {
         return err;
     }
