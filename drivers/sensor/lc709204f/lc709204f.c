@@ -122,13 +122,7 @@ static int lc709204f_init(const struct device *dev)
     struct lc709204f_config *config = dev->config;
     int err;
 
-    data->i2c = device_get_binding(config->bus_name);
-    if (!data->i2c) {
-        LOG_ERR("Couldn't get pointer to %s device", config->bus_name);
-        return -ENODEV;
-    }
-
-    if (!device_is_ready(data->i2c)) {
+    if (!device_is_ready(config->i2c.bus)) {
         LOG_ERR("i2c bus is not ready");
         return -ENODEV;
     }
@@ -173,7 +167,7 @@ static const struct sensor_driver_api lc709204f_api_funcs = {
 #define LC709204F_INIT(inst)                                        \
     static struct lc709204f_data lc709204f_data_##inst;             \
     static const struct lc709204f_config lc709204f_config_##inst = {\
-        .bus_name = DT_INST_BUS_LABEL(inst),                        \
+        .bus_name = I2C_DT_SPEC_INSTGET(inst),                      \
         .design_capacity = DT_INST_PROP(inst, design_capacity),     \
         .design_voltage = DT_INST_PROP(inst, design_voltage),       \
         .desired_voltage = DT_INST_PROP(inst, desired_voltage),     \

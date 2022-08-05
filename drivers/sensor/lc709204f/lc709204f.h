@@ -1,6 +1,8 @@
 #ifndef _LC709204F_H_
 #define _LC709204F_H_
 
+#include <drivers/i2c.h>
+
 /* Commands */
 enum lc709204f_commands {
     TIME_TO_EMPTY               = 0x03,
@@ -78,7 +80,6 @@ enum lc709204f_status_bit_masks {
 };
 
 struct lc709204f_data {
-    const struct device *i2c;
     /* Current cell voltage in mV */
     uint16_t voltage;
     /* Max cell voltage seen in mV */
@@ -108,7 +109,7 @@ struct lc709204f_data {
 };
 
 struct lc709204f_config {
-    char *bus_name;
+    struct i2c_dt_spec i2c;
     /* Design capacity (label capacity) of the cell in mAh */
     uint16_t design_capacity;
     /* Design capacity of the cell in mV */
