@@ -129,7 +129,7 @@ static int lc709204f_init(const struct device *dev)
 
     err = lc709204f_write_register(config->bus, LC709204F_REG_APA, config->apa_value);
     if (err != 0) {
-        return rc;
+        return err;
     }
 
     int battery_type_param = lc709204f_convert_battery_type_to_param(config->battery_type);
@@ -139,23 +139,23 @@ static int lc709204f_init(const struct device *dev)
 
     err = lc709204f_write_register(drv_data->i2c_spec, LC709204F_REG_CHANGE_OF_PARAMETER, battery_type_param);
     if (err != 0) {
-        return rc;
+        return err;
     }
 
     err = lc709204f_write_register(drv_data->i2c_spec, LC709204F_REG_TERMINATION_CURRENT_RATE, config->term_current_rate);
     if (err != 0) {
-        return rc;
+        return err;
     }
 
     err = lc709204f_write_register(config->bus, LC709204F_REG_EMPTY_CELL_VOLTAGE, config->empty_cell_voltage);
     if (err != 0) {
-        return rc;
+        return err;
     }
 
 
     err = lc709204f_write_register(config->bus, LC709204F_REG_IC_POWER_MODE, 0x0001);
     if (err != 0) {
-        return rc;
+        return err;
     }
 }
 
