@@ -11,39 +11,11 @@
 
 LOG_MODULE_REGISTER(lc709204f, CONFIG_SENSOR_LOG_LEVEL);
 
-// TODO: define
-struct lc709204f_data {
-    uint16_t state_of_charge;
-    uint16_t state_of_health;
-    uint16_t max_voltage;
-    uint16_t min_voltage;
-    uint16_t voltage;
-    uint16_t max_temp;
-    uint16_t min_temp;
-    uint16_t temp;
-    uint16_t ambient_temp;
-    uint16_t time_to_full;
-    uint16_t time_to_empty;
-    uint16_t cycle_count;
-    uint32_t total_run_time;
-};
+#include "lc709204f.h"
 
-struct battery_data {
-    uint16_t max_voltage;
-    uint16_t min_voltage;
-    uint16_t nom_voltage;
-    uint32_t capacity;
-    uint16_t charge_current;
-};
+#define DT_DRV_COMPAT onsemi_lc709204f
 
-struct lc709204f_config {
-    struct i2c_dt_spec bus;
-    uint16_t apa_value;
-    uint16_t battery_type;
-    uint16_t term_current_rate;
-    uint16_t empty_cell_voltage;
-    struct battery_data battery_specs;
-};
+
 
 static int lc709204f_write_register(const struct i2c_dt_spec *spec, 
         uint8_t reg_addr, uint16_t value) 
