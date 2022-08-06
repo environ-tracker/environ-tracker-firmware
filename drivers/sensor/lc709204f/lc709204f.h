@@ -1,7 +1,10 @@
-#ifndef _LC709204F_H_
-#define _LC709204F_H_
+#ifndef ZEPHYR_DRIVERS_SENSOR_LC709204F_LC709204F_H_
+#define ZEPHYR_DRIVERS_SENSOR_LC709204F_LC709204F_H_
 
+#include <drivers/sensor.h>
 #include <drivers/i2c.h>
+#include <drivers/gpio.h>
+
 
 #define LC709204F_0C_VALUE      0xAAC
 
@@ -86,6 +89,7 @@ enum lc709204f_battery_status_bit_masks {
 };
 
 struct lc709204f_data {
+    const struct device *dev;
     /* Current cell voltage in mV */
     uint16_t voltage;
     /* Max cell voltage seen in mV */
@@ -112,10 +116,33 @@ struct lc709204f_data {
     uint16_t ambient_temp;
     /* Total run time from POR in minutes */
     uint32_t total_run_time;
+
+#ifdef CONFIG_LC709204F_TRIGGER
+    struct k_mutex threshold_mutex;
+    uint16_t alarm_high_voltage_threshold;
+    uint16_t alarm_low_voltage_threshold;
+    uint16_t alarm_high_temp_threshold;
+    uint16_t alarm_low_temp_threshold;
+    uint16_t alarm_low_rsoc_threshold;
+
+    struct gpio_callback gpio_cb;
+    sensor_trigger_handler_t handler_alarm_voltage;
+    sensor_trigger_handler_t handler_alarm_temp;
+    sensor_trigger_handler_t handler_alarm_rsoc;
+
+#if defined(CONFIG_LC709204F_TRIGGER_OWN_THREAD) 
+    K_KERNEL_STACK_MEMBER(thread_stack, 
+            CONFIG_LC709204F_THREAD_STACK_SIZE);
+    struct k_thread thread;
+    struct k_sem gpio_sem;
+#elif defined(CONFIG_LC709204F_TRIGGER_GLOBAL_THREAD)
+    struct k_work work;
+#endif /* CONFIG_LC709204F_TRIGGER_OWN_THREAD */
+#endif /* CONFIG_LC70924F_TRIGGER */
 };
 
 struct lc709204f_config {
-    struct i2c_dt_spec i2c;
+    const struct i2c_dt_spec i2c;
     /* Design capacity (label capacity) of the cell in mAh */
     uint16_t design_capacity;
     /* Design capacity of the cell in mV */
@@ -132,6 +159,36 @@ struct lc709204f_config {
     uint16_t apa_value;
     /* Battery type (a type supported by the LC709204F) */
     enum lc709204f_supported_battery_types battery_type;
+#ifdef CONFIG_LC709204F_TRIGGER
+    const struct gpio_dt_spec gpio_int;
+    bool trig_enabled;
+#endif /* CONFIG_LC709204F_TRIGGER */
 };
 
-#endif /* _LC709204F_H_ */
+struct lc709204f_battery_status_reg {
+    uint8_t high_cell_voltage : 1;
+    uint8_t low_cell_voltage : 1;
+    uint8_t high_cell_temp : 1;
+    uint8_t low_rsoc : 1;
+    uint8_t low_cell_temp : 1;
+    uint8_t initialized : 1;
+    uint8_t discharging : 1;
+};
+
+int lc709204f_reg_write(const struct i2c_dt_spec *, uint8_t, uint16_t);
+
+int lc709204f_reg_read(const struct i2c_dt_spec *, uint8_t, uint16_t *);
+
+int lc709204f_status_reg_get(const struct i2c_dt_spec *, lc709204f_battery_status_reg *);
+
+#ifdef CONFIG_LC709204F_TRIGGER
+int lc709204f_clear_interrupt_flag(const struct device *, uint16_t);
+
+int lc709204f_trigger_set(const struct device *,
+        const struct sensor_trigger *,
+        sensor_trigger_handler_t);
+
+int lc709204f_init_interrupt(const struct device *);
+#endif /* CONFIG_LC709204F_TRIGGER */
+
+#endif /* ZEPHYR_DRIVERS_SENSOR_LC709204F_LC709204F_H_ */

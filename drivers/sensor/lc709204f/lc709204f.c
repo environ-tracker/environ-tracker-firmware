@@ -3,8 +3,7 @@
 #include <init.h>
 #include <drivers/i2c.h>
 #include <drivers/sensor.h>
-#include <sys/byteorder.h>
-#include <sys/crc.h>
+#include <sys/util.h>
 
 #include <logging/log.h>
 LOG_MODULE_REGISTER(lc709204f, CONFIG_SENSOR_LOG_LEVEL);
@@ -15,51 +14,63 @@ LOG_MODULE_REGISTER(lc709204f, CONFIG_SENSOR_LOG_LEVEL);
 
 
 /**
- * @brief Write to a 16b register
+ * @brief Set a sensor device attribute
+ * NOTE: Only alarm attributes are available for this sensor.
  * 
- * @param spec The I2C bus devicetree spec
- * @param reg_addr Register address to write to
- * @param value Value to write to register
- * @return 0 if successful, or negative error code from I2C API
+ * @param dev Device the attribute is for
+ * @param chan Sensor channel to set attribute for
+ * @param attr Attribute to set
+ * @param val Attribute value
+ * @return 0 on success, negative error code on failure 
  */
-static int lc709204f_reg_write(const struct i2c_dt_spec *spec, 
-        uint8_t reg_addr, uint16_t value) 
+static int lc709204f_attr_set(const struct device *dev, 
+        enum sensor_channel *chan, enum sensor_attribute attr, 
+        const struct sensor_value *val)
 {
-    // Addresses added to make CRC-8 calculation easier
-    uint8_t buf[5] = {spec->addr, reg_addr, value, value >> 8, 0};
+    struct lc709204f_data *data = dev->data;
+    int err = 0;
 
-    // Calculate CRC-8
-    buf[4] = crc8(buf, 4, 0x07, 0, false);
+    k_mutex_lock(&data->threshold_mutex, M_SEC(1));
 
-    return i2c_write_dt(spec, &buf[1], 4);
-}
-
-/**
- * @brief Read a 16b register value
- * NOTE: Currently the CRC-8 value is not checked
- * 
- * @param spec The I2C bus devicetree spec
- * @param reg_addr Register address to read
- * @param value Place to put the value on success
- * @return 0 if successful, or negative error code from I2C API
- */
-static int lc709204f_reg_read(const struct i2c_dt_spec *spec,
-        uint8_t reg_addr, uint16_t *value)
-{
-    uint8_t buf[3] = {0};
-
-    // Read 2 data bytes and crc byte
-    int err = i2c_burst_read_dt(spec, reg_addr, buf, 3);
-    if (err != 0) {
-        return err;
+    switch (chan) {
+    case SENSOR_CHAN_GAUGE_VOLTAGE:
+        if (attr == SENSOR_ATTR_UPPER_THRESH) {
+            data->alarm_high_voltage_threshold = val1 * 1000 + val2 / 1000;
+        } else if (attr == SENSOR_ATTR_LOWER_THRESH) {
+            data->alarm_low_voltage_threshold = val1 * 1000 + val2 / 1000;
+        } else {
+            LOG_WRN("Attribute not supported for voltage alarm");
+            err = -ENOTSUP;
+        }
+        break;
+    case SENSOR_CHAN_GAUGE_TEMP:
+        if (attr == SENSOR_ATTR_UPPER_THRESH) {
+            data->alarm_high_temp_threshold = val1 * 10 + val2 / 100000;
+        } else if (attr == SENSOR_ATTR_LOWER_THRESH) {
+            data->alarm_low_temp_threshold = val1 * 10 + val2 / 100000;
+        } else {
+            LOG_WRN("Attribute not supported for temperature alarm");
+            err = -ENOTSUP;
+        }
+        break;
+    case SENSOR_CHAN_GAUGE_STATE_OF_CHARGE:
+        if (attr == SENSOR_ATTR_LOWER_THRESH) {
+            data->alarm_low_rsoc_threshold = val1 * 10 + val2 / 100000;
+        } else {
+            LOG_WRN("Attribute not supported for state of charge alarm");
+            err = -ENOTSUP;
+        }
+        break;
+    default:
+        LOG_WRN("attr_set() not supported on this channel");
+        err = -ENOTSUP;
     }
 
-    // Save register data in sys endianness
-    *value = (buf[1] << 8) | buf[0];
-    *value = sys_le16_to_cpu(*value);
+    k_mutex_unlock(&data->threshold_mutex);
 
     return 0;
 }
+
 
 /**
  * @brief Converts the LC709204F's temperature representation to units of 0.1 
@@ -75,6 +86,7 @@ static void lc709204f_temperature_to_sensor_val(uint16_t lc_temperature, struct 
     sensor_val->val1 = temperature / 10;
     sensor_val->val2 = (temperature % 10) * 100000;
 }
+
 
 /**
  * @brief Fetches all on device channel data at once
@@ -131,6 +143,7 @@ static int lc709204f_sample_fetch(const struct device *dev,
 
     return 0;
 }
+
 
 /**
  * @brief Retrieve the sensors values
@@ -203,6 +216,7 @@ static int lc709204f_channel_get(const struct device *dev,
     return 0;
 }
 
+
 /**
  * @brief Initialise the LC709204F after a Power On Reset (POR) event
  * 
@@ -215,6 +229,9 @@ static int lc709204f_init(const struct device *dev)
     struct lc709204f_config *config = dev->config;
     int err;
     uint16_t status, tmp;
+
+    LOG_INF("Initialise device %s", dev->name);
+    data->dev = dev;
 
     if (!device_is_ready(config->i2c.bus)) {
         LOG_ERR("i2c bus is not ready");
@@ -276,10 +293,25 @@ static int lc709204f_init(const struct device *dev)
     }
 }
 
+
 static const struct sensor_driver_api lc709204f_api_funcs = {
     .sample_fetch = lc709204f_sample_fetch,
     .channel_get = lc709204f_channel_get,
+    .attr_set = lc709204f_attr_set,
+#ifdef CONFIG_LC709204F_TRIGGER
+    .trigger_set = lc709204f_trigger_set,
+#endif /* CONFIG_LC709204F_TRIGGER */
 };
+
+
+#ifdef CONFIG_LC709204F_TRIGGER
+#define LC709204F_CFG_IRQ(inst) \
+    .trig_enabled = true,       \
+    .gpio_int = GPIO_DT_SPEC_INST_GET(inst, nint_gpios),    
+#else
+#define LC709204F_CFG_IRQ(inst)
+#endif /* CONFIG_LC709204F_TRIGGER */
+
 
 #define LC709204F_INIT(inst)                                        \
     static struct lc709204f_data lc709204f_data_##inst;             \
@@ -294,6 +326,8 @@ static const struct sensor_driver_api lc709204f_api_funcs = {
         .charging_termination_current = DT_INST_PROP(inst, chg_term_current), \
         .apa_value = DT_INST_PROP(inst, apa_value),                 \
         .battery_type = DT_INST_PROP(inst, battery_type),           \
+        COND_CODE_1(DT_INST_NODE_HAS_PROP(inst, nint_gpios),        \ 
+                (LC709204F_CFG_IRQ(inst)), ()),                     \
     };                                                              \
     DEVICE_DT_INST_DEFINE(inst,                                     \
             lc709204f_init,                                         \
