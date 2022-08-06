@@ -45,10 +45,10 @@ properties:
 
   battery-type:
     type: int
-    enum: [1, 4, 5, 6, 7]
+    enum: [0, 1, 2, 3, 4]
     required: true
-    description: The type of battery being used. 
-        (Must be one of [1, 4, 5, 6, 7])
+    description: The register value of the type of battery being used. 
+        (Must be one of [0, 1, 2, 3, 4])
 
   apt-value:
     type: int

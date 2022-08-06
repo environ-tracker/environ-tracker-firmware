@@ -203,27 +203,6 @@ static int lc709204f_channel_get(const struct device *dev,
     return 0;
 }
 
-
-
-// TODO: CHange to macros
-static int lc709204f_convert_battery_type_to_param(int battery_type)
-{
-    switch (battery_type) {
-    case 1:
-        return BATTERY_01;
-    case 4:
-        return BATTERY_04;
-    case 5:
-        return BATTERY_05;
-    case 6:
-        return BATTERY_06;
-    case 7:
-        return BATTERY_07;
-    default:
-        return -EINVAL;
-    }
-}
-
 /**
  * @brief Initialise the LC709204F after a Power On Reset (POR) event
  * 
@@ -259,14 +238,9 @@ static int lc709204f_init(const struct device *dev)
         return err;
     }
 
-    /* Get battery value from battery type config */
-    tmp = lc709204f_convert_battery_type_to_param(config->battery_type);
-    if (tmp < 0) {
-        return tmp;
-    }
-
     /* Write battery type */
-    err = lc709204f_reg_write(&config->i2c, CHANGE_OF_PARAMETER, tmp);
+    err = lc709204f_reg_write(&config->i2c, CHANGE_OF_PARAMETER, 
+            (uint16_t)config->battery_type);
     if (err != 0) {
         return err;
     }
