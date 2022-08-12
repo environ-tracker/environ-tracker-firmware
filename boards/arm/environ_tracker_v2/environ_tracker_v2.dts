@@ -91,13 +91,17 @@
     pinctrl-1 = <&i2c0_sleep>;
     pinctrl-names = "default", "sleep";
     lc709204f: lc709204f@0b {
-        compatible = "";
+        compatible = "onsemi,lc709204f";
         reg = <0b>;
         label = "FUEL_GAUGE";
-        battery-type = <1>;
-        empty-voltage = <4200>;
-        chg-term-current = <25>;
+        design-capacity = <400>;
+        design-voltage = <3700>;
+        desired-voltage = <4200>;
+        empty-voltage = <3200>;
+        desired-charging-current = <1000>;
+        chg-term-current = <1000>;
         apa-value = <1e1e>;
+        battery-type = <0>;
         nint-gpios = <&gpio0 8 GPIO_ACTIVE_LOW>;
     };
 
