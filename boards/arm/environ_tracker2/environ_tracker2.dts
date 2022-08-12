@@ -1,10 +1,10 @@
 /dts-v1/;
 #include <nordic/nrf52833_qiaa.dtsi>
-#include <environ_tracker_v2-pinctrl.dtsi>
+#include "environ_tracker2-pinctrl.dtsi"
 
 / {
     model = "Thesis Environment Tracker v2";
-    compatible = "nordic,environ_tracker_v2";
+    compatible = "nordic,environ_tracker2";
 
     chosen {
         zephyr,console = &uart0;
@@ -41,7 +41,7 @@
         regulator-name = "mother-vdd-pwr-ctrl";
         enable-gpios = <&gpio0 19 GPIO_ACTIVE_HIGH>;
         regulator-boot-on;
-    }
+    };
 };
 
 &gpiote {
@@ -92,7 +92,7 @@
     pinctrl-names = "default", "sleep";
     lc709204f: lc709204f@0b {
         compatible = "onsemi,lc709204f";
-        reg = <0b>;
+        reg = <0x0b>;
         label = "FUEL_GAUGE";
         design-capacity = <400>;
         design-voltage = <3700>;
@@ -100,7 +100,7 @@
         empty-voltage = <3200>;
         desired-charging-current = <1000>;
         chg-term-current = <1000>;
-        apa-value = <1e1e>;
+        apa-value = <0x1e1e>;
         battery-type = <0>;
         nint-gpios = <&gpio0 8 GPIO_ACTIVE_LOW>;
     };
