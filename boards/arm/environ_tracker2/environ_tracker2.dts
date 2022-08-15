@@ -91,7 +91,7 @@
     pinctrl-1 = <&i2c0_sleep>;
     pinctrl-names = "default", "sleep";
     lc709204f: lc709204f@0b {
-        compatible = "onsemi,lc709204f";
+        compatible = "onnn,lc709204f";
         reg = <0x0b>;
         label = "FUEL_GAUGE";
         design-capacity = <400>;

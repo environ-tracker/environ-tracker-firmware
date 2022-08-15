@@ -1,7 +1,7 @@
 description: |
   Onsemi Li-ion/Li+ battery fuel gauge.
 
-compatible: "onsemi,lc709204f"
+compatible: "onnn,lc709204f"
 
 include: i2c-device.yaml
 

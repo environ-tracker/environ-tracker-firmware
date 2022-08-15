@@ -7,7 +7,7 @@ LOG_MODULE_DECLARE(lc709204f, CONFIG_SENSOR_LOG_LEVEL);
 
 #include "lc709204f.h"
 
-#define DT_DRV_COMPAT onsemi_lc709204f
+#define DT_DRV_COMPAT onnn_lc709204f
 
 /**
  * @brief Sets the given trigger
