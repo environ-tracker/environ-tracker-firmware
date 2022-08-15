@@ -1,0 +1,74 @@
+description: |
+  Onsemi Li-ion/Li+ battery fuel gauge.
+
+compatible: "onnn,lc709204f"
+
+include: i2c-device.yaml
+
+properties:
+
+  design-capacity:
+    type: int
+    required: true
+    description: The label capacity of the cell in mAh
+
+  design-voltage:
+    type: int
+    required: true
+    description: The label voltage of the cell in mV
+
+  desired-voltage:
+    type: int
+    required: true
+    description: The desired voltage of the cell in mV
+
+  empty-voltage:
+    type: int
+    required: true
+    description: The empty voltage of the cell in mV
+
+  desired-charging-current:
+    type: int
+    required: true
+    description: The desired charging current of the cell in mA
+
+  chg-term-current:
+    type: int
+    required: true
+    description: The charge termination current in uA
+
+  apa-value:
+    type: int
+    required: true
+    description: Adjustment Pack Application values. Used to adjust gauge to
+        connected battery
+
+  battery-type:
+    type: int
+    enum: [0, 1, 2, 3, 4]
+    required: true
+    description: The register value of the type of battery being used. 
+        (Must be one of [0, 1, 2, 3, 4])
+
+  apt-value:
+    type: int
+    required: false
+    description: NOT CURRENTLY SUPPORTED. Adjustment Pack Thermistor values. 
+        Sets the delay time from turn-on to temperature measurement
+
+  sense2-thermistor-b:
+    type: int
+    required: false
+    description: NOT CURRENTLY SUPPORTED. The B-constant of the thermistor 
+        connected to SENSE2
+
+  sense1-thermistor-b:
+    type: int
+    required: false
+    description: NOT CURRENTLY SUPPORTED. The B-constant of the thermistor 
+        connected to SENSE2
+
+  nint-gpios:
+    type: phandle-array
+    required: false
+    description: Active low interrupt pin

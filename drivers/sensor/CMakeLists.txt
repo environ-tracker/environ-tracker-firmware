@@ -1,1 +1,2 @@
 add_subdirectory_ifdef(CONFIG_SI1132 si1132)
+add_subdirectory_ifdef(CONFIG_LC709204F lc709204f)

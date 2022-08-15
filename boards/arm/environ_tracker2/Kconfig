@@ -1,13 +1,13 @@
 # Environ Tracker v2 board configuration
 
-if BOARD_ENVIRON_TRACKER_V2
+if BOARD_ENVIRON_TRACKER2
 
 config BOARD_MOTHER_VDD_PWR_CTRL_INIT_PRIORITY
-    int "Motherboard VDD power rail init priority
+    int "Motherboard VDD power rail init priority"
     default 50
     depends on GPIO
     help
         Initialization priority for the motherboard VDD power rail. Has to be 
         greater than GPIO_INIT_PRIORITY.
 
-endif # BOARD_ENVIRON_TRACKER_V2
+endif # BOARD_ENVIRON_TRACKER2
