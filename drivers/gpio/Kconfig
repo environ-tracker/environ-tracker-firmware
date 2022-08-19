@@ -1,3 +1,4 @@
 if GPIO
 rsource "Kconfig.sx1502"
+rsource "Kconfig.sx1508b"
 endif # GPIO
