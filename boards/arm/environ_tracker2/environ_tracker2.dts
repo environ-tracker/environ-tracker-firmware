@@ -106,9 +106,9 @@ shieldi2c: &i2c0 {
     };
 
     // TODO: provide support for RTC
-    // rv3028c7: rv3028c7@a4 {
+    // rv3028c7: rv3028c7@52 {
     //     compatible = "";
-    //     reg = <a4>;
+    //     reg = <52>;
     //     label = "EXT_RTC";
     //     irq-gpios = <&gpio1 5 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
     // };
