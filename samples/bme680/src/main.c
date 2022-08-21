@@ -18,12 +18,12 @@ void main(void)
 	const struct device *dev = device_get_binding(DT_LABEL(DT_INST(0, bosch_bme680)));
 	struct sensor_value temp, press, humidity, gas_res;
 
-	LOG_ERR("Device %p name is %s\n", dev, dev->name);
+	LOG_WRN("Device %p name is %s\n", dev, dev->name);
 
 	while (1) {
 		k_sleep(K_MSEC(3000));
 
-		// LOG_WRN("Running loop");
+		LOG_WRN("Running loop");
 
 
 		sensor_sample_fetch(dev);

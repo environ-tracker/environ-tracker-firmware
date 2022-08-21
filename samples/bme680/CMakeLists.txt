@@ -5,6 +5,10 @@
 #
 
 cmake_minimum_required(VERSION 3.20.0)
+
+set(BOARD environ_tracker2)
+set(SHIELD environ_tracker_daughterboard_v2)
+
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(bme680)
 
