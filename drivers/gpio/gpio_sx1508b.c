@@ -255,7 +255,7 @@ static int sx1508b_config(const struct device *dev, gpio_pin_t pin,
 	if (drv_data->led_drv_enable & BIT(pin)) {
 		/* Disable LED driver */
 		drv_data->led_drv_enable &= ~BIT(pin);
-		rc = i2c_reg_write_byte_dt(&cfg->bus, SX1509B_REG_LED_DRV_ENABLE, 
+		rc = i2c_reg_write_byte_dt(&cfg->bus, SX1508B_REG_LED_DRV_ENABLE, 
 				drv_data->led_drv_enable);
 
 		if (rc) {
