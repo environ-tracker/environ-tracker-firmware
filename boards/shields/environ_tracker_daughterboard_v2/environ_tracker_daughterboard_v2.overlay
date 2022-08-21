@@ -61,7 +61,7 @@
     status = "okay";
 
     sx1508b: sx1508b@20 {
-        compatible = "semtech,sx1509b";
+        compatible = "semtech,sx1508b";
         reg = <0x20>;
         label = "GPIO_CTRL";
         gpio-controller;
