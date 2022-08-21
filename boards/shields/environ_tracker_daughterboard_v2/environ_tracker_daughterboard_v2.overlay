@@ -45,12 +45,13 @@
         };
     };
 
-    daughter_vdd_pwr: daughter-vdd-pwr-ctrl {
+    daughter_pwr_ctrl: daughter-vdd-pwr-ctrl {
         compatible = "regulator-fixed";
-        label = "daughter-vdd-pwr-ctrl";
-        regulator-name = "daughter-vdd-pwr-ctrl";
+        label = "daughter-pwr-ctrl";
+        regulator-name = "daughter-pwr-ctrl";
         enable-gpios = <&sx1508b 4 GPIO_ACTIVE_HIGH>;
         regulator-boot-on;
+    };
 };
 
 &adc {
@@ -77,7 +78,7 @@
         compatible = "bosch,bme680";
         reg = <0x76>;
         label = "BME680";
-        vin-supply = <&daughter_vdd_pwr>;
+        vin-supply = <&daughter_pwr_ctrl>;
     };
 
     lsm6dso: lsm6dso@6a {
@@ -97,14 +98,14 @@
         compatible = "silabs,si1132";
         reg = <0x60>;
         label = "Si1132";
-        vin-supply = <&daughter_vdd_pwr>;
+        vin-supply = <&daughter_pwr_ctrl>;
     };
 
     ssd1306: ssd1306@3c {
         compatible = "solomon,ssd1306fb";
         reg = <0x3c>;
         label = "SSD1306";
-        vin-supply = <&daughter_vdd_pwr>;
+        vin-supply = <&daughter_pwr_ctrl>;
         height = <32>;
         width = <128>;
         segment-offset = <0>;
