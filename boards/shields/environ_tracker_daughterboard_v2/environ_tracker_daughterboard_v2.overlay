@@ -116,6 +116,6 @@
         segment-remap;
         com-invdir;
         com-sequential;
-    reset-gpios = <&sx1508b 6 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+        reset-gpios = <&sx1508b 6 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
     };
 };

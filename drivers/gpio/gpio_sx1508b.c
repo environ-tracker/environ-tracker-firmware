@@ -557,9 +557,9 @@ static int sx1508b_init(const struct device *dev)
 	}
 	if (rc == 0) {
 		rc = i2c_reg_write_byte_dt(&cfg->bus, SX1508B_REG_MISC, 
-				SX1509B_REG_MISC_LOG_A | 
-				SX1509B_REG_MISC_LOG_B | 
-				SX1509B_REG_MISC_FREQ);
+				SX1508B_REG_MISC_LOG_A | 
+				SX1508B_REG_MISC_LOG_B | 
+				SX1508B_REG_MISC_FREQ);
 	}
 
 out:
