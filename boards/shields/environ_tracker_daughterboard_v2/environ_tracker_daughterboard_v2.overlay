@@ -50,7 +50,7 @@
         label = "daughter-vdd-pwr-ctrl";
         regulator-name = "daughter-vdd-pwr-ctrl";
         enable-gpios = <&sx1508b 4 GPIO_ACTIVE_HIGH>;
-    }
+        regulator-boot-on;
 };
 
 &adc {
