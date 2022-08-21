@@ -15,14 +15,15 @@
 #include <zephyr/device.h>
 #include <zephyr/init.h>
 #include <zephyr/drivers/gpio.h>
-#include <zephyr/drivers/gpio/gpio_sx1508b.h>
-#include <zephyr/dt-bindings/gpio/semtech-sx1508b.h>
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/util.h>
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(sx1508b, CONFIG_GPIO_LOG_LEVEL);
+
+#include "zephyr/drivers/gpio/gpio_sx1508b.h"
+#include "zephyr/dt-bindings/gpio/semtech-sx1508b.h"
 
 #include "gpio_utils.h"
 
