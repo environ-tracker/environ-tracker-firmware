@@ -1,5 +1,3 @@
-#define DT_DRV_COMPAT silabs_si1132
-
 #include <kernel.h>
 #include <device.h>
 #include <init.h>
@@ -14,14 +12,20 @@
 
 #include "si1132.h"
 
-LOG_MODULE_REGISTER(si1132, CONFIG_SENSOR_LOG_LEVEL);
+LOG_MODULE_REGISTER(SI1132, CONFIG_SENSOR_LOG_LEVEL);
+
+#define DT_DRV_COMPAT silabs_si1132
+
 
 struct si1132_data {
-    const struct device *i2c_dev;
     uint16_t vis_light;
     uint16_t ir_light;
     uint16_t uv_index;
     uint8_t calib[4];
+};
+
+struct si1132_config {
+    struct i2c_dt_spec bus;
 };
 
 /**
@@ -39,7 +43,7 @@ static int si1132_response_handler(uint8_t response)
     switch (response) {
     case SI1132_RESPONSE_INVALID_SETTING:
         LOG_ERR("Invalid setting");
-        return -ENOTSUP;
+        return -EINVAL;
     case SI1132_RESPONSE_ALS_VIS_ADC_OVERFLOW:
         LOG_ERR("VIS ADC Overflow");
         break;
@@ -61,99 +65,46 @@ static int si1132_response_handler(uint8_t response)
     return -EOVERFLOW;
 }
 
-/**
- * @brief Writes to the Command register, performing the required Response 
- *        register checking
- * 
- * @param i2c_dev I2C device Si1132 device is on
- * @param cmd Command to write to the Command register
- * @return int 0 on success
- */
-static int si1132_write_cmd_reg(const struct device *i2c_dev, uint8_t cmd)
-{
-    int rc;
-    uint8_t response;
-
-    /* Clear the Response register (send NOP command) */
-    rc = i2c_reg_write_byte(i2c_dev, DT_INST_REG_ADDR(0), SI1132_REG_COMMAND,
-            0x00);
-    if (rc != 0) {
-        LOG_ERR("Error while attempting to clear Response register");
-        return rc;
-    }
-
-    /* Verify register is cleared */
-    rc = i2c_reg_read_byte(i2c_dev, DT_INST_REG_ADDR(0), SI1132_REG_RESPONSE, 
-            &response);
-    if (rc != 0) {
-        LOG_ERR("Error while attemping to verify Reponse register was cleared");
-        return rc;
-    }
-
-    rc = si1132_response_handler(response);
-    if (rc != 0) {
-        return rc;
-    }
-
-    /* Write command into Command register */
-    rc = i2c_reg_write_byte(i2c_dev, DT_INST_REG_ADDR(0), 
-            SI1132_REG_COMMAND, cmd);
-    if (rc != 0) {
-        LOG_ERR("Error while attempting to write cmd: %02x to "
-                "Command register", cmd);
-        return rc;
-    }
-
-    /* Verify Response register has changed */
-    rc = i2c_reg_read_byte(i2c_dev, DT_INST_REG_ADDR(0), SI1132_REG_RESPONSE, 
-            &response);
-    if (rc != 0) {
-        LOG_ERR("Error while attempting to verify Response register changed");
-        return rc;
-    }
-
-    rc = si1132_response_handler(response);
-
-    return rc;
-}
 
 static int si1132_sample_fetch(const struct device *dev,
                     enum sensor_channel chan)
 {
-    int rc;
-    uint8_t vis_ir_data[4], uv_data[2];
-    struct si1132_data *si_data = dev->data;
+    // int rc;
+//     uint8_t vis_ir_data[4], uv_data[2];
+//     struct si1132_data *si_data = dev->data;
+//     struct si1132_config *config = dev->config;
 
-    __ASSERT_NO_MSG(chan == SENSOR_CHAN_ALL);
+//     __ASSERT_NO_MSG(chan == SENSOR_CHAN_ALL);
 
-    /* Get visible and IR light data */
-    rc = i2c_burst_read(si_data->i2c_dev, DT_INST_REG_ADDR(0),
-            SI1132_REG_ALS_VIS_DATA, &vis_ir_data[0], sizeof(vis_ir_data));
-    if (rc == 0) {
-        si_data->vis_light = sys_le16_to_cpu(
-                vis_ir_data[0] << 8 | vis_ir_data[1]);
-        si_data->ir_light = sys_le16_to_cpu(vis_ir_data[2] << 8 | vis_ir_data[3]);
+//     /* Get visible and IR light data */
+//     rc = i2c_burst_read_dt(&config->bus,
+//             SI1132_REG_ALS_VIS_DATA, &vis_ir_data[0], sizeof(vis_ir_data));
+//     if (rc == 0) {
+//         si_data->vis_light = sys_le16_to_cpu(
+//                 vis_ir_data[0] << 8 | vis_ir_data[1]);
+//         si_data->ir_light = sys_le16_to_cpu(vis_ir_data[2] << 8 | vis_ir_data[3]);
 
-        // TODO: apply factory calibration
-    } else {
-        LOG_ERR("Error while reading VIS and IR data registers");
-        return rc;
-    }
+//         // TODO: apply factory calibration
+//     } else {
+//         LOG_ERR("Error while reading VIS and IR data registers");
+//         return rc;
+//     }
 
-    /* Get UV data */
-    rc = i2c_burst_read(si_data->i2c_dev, DT_INST_REG_ADDR(0),
-            SI1132_REG_AUX_DATA, &uv_data[0], sizeof(uv_data));
-    if (rc == 0) {
-        si_data->uv_index = sys_le16_to_cpu(uv_data[0] << 8 | uv_data[1]);
-    } else {
-        LOG_ERR("Error while reading UV data register");
-        return rc;
-    }
+//     /* Get UV data */
+//     rc = i2c_burst_read_dt(&config->bus,
+//             SI1132_REG_AUX_DATA, &uv_data[0], sizeof(uv_data));
+//     if (rc == 0) {
+//         si_data->uv_index = sys_le16_to_cpu(uv_data[0] << 8 | uv_data[1]);
+//     } else {
+//         LOG_ERR("Error while reading UV data register");
+//         return rc;
+//     }
 
-    /* Start the next conversion */
-    rc = si1132_write_cmd_reg(si_data->i2c_dev, SI1132_CMD_ALS_FORCE);
+//     /* Start the next conversion */
+//     // rc = si1132_write_cmd_reg(si_data->i2c_dev, SI1132_CMD_ALS_FORCE);
 
-    return rc;
+//     return rc;
+    return 0;
 }
 
 static int si1132_channel_get(const struct device *dev,
@@ -191,128 +142,129 @@ static int si1132_channel_get(const struct device *dev,
     return 0;
 }
 
-static const struct sensor_driver_api si1132_api = {
-    .sample_fetch = &si1132_sample_fetch,
-    .channel_get = &si1132_channel_get,
-};
+
 
 static int si1132_init(const struct device *dev)
 {
-    int rc;
+    struct si1132_data *data = dev->data;
+    struct si1132_config *config = dev->config;
+    int err;
     uint8_t ids[3] = {0};
-    uint8_t meas_rate[2] = {0x00, 0x00};
     uint8_t ucoeff[4] = {0x7B, 0x6B, 0x01, 0x00};
-    struct si1132_data *drv_data = dev->data;
+    
 
-    drv_data->i2c_dev = device_get_binding(DT_INST_BUS_LABEL(0));
 
-    if (!drv_data->i2c_dev) {
-        LOG_ERR("i2c master not found.");
-        return -EINVAL;
+    LOG_INF("Initialise device %s", dev->name);
+
+    if (!device_is_ready(config->bus.bus)) {
+        LOG_ERR("i2c bus not ready");
+        return -ENODEV;
     }
-
-    /* Reset Si1132 */
-    rc = i2c_reg_write_byte(drv_data->i2c_dev, DT_INST_REG_ADDR(0),
-            SI1132_REG_COMMAND, SI1132_CMD_RESET);
-    if (rc != 0) {
-        return rc;
-    }
-
-    // TODO: wait 1ms for device to reset
 
     // Write to HW_KEY register as required
-    rc = i2c_reg_write_byte(drv_data->i2c_dev, DT_INST_REG_ADDR(0),
-            SI1132_REG_HW_KEY, SI1132_HW_KEY_MAGIC);
-    if (rc != 0) {
-        return rc;
+    err = i2c_reg_write_byte_dt(&config->bus, SI1132_REG_HW_KEY, 
+            SI1132_HW_KEY_MAGIC);
+    if (err != 0) {
+        return err;
     }
 
-    rc = i2c_burst_read(drv_data->i2c_dev, DT_INST_REG_ADDR(0), 
-            SI1132_REG_PART_ID, &ids[0], sizeof(ids));
-    if (rc != 0) {
-        return rc;
+    err = i2c_burst_read_dt(&config->bus, SI1132_REG_PART_ID, &ids[0], 
+            ARRAY_SIZE(ids));
+    if (err != 0) {
+        return err;
     }
 
     if (ids[0] == SI1132_PART_ID) {
-        LOG_DBG("Si1132 device detected. PART_ID: %02x, REV_ID: %02x, "
+        LOG_INF("Si1132 device detected. PART_ID: %02x, REV_ID: %02x, "
                 "SEQ_ID: %02x", ids[0], ids[1], ids[2]);
     } else {
         LOG_ERR("Si1132 device not found");
         return -ENOTSUP;
     }
 
-    /* 
-     * Set the device in Forced Measurement mode but also handle the
-     * error case where SEQ_ID = 0x01 which changes the location of
-     * the MEAS_RATE registers 
-     */
-    if (ids[2] == 0x01) {
-        rc = i2c_reg_write_byte(drv_data->i2c_dev, DT_INST_REG_ADDR(0),
-                0x0A, meas_rate[0]);
-        if (rc != 0) {
-            return rc;
-        }
-
-        rc = i2c_reg_write_byte(drv_data->i2c_dev, DT_INST_REG_ADDR(0),
-                0x08, meas_rate[1]);
-        if (rc != 0) {
-            return rc;
-        }
-
-    } else {
-        rc = i2c_burst_write(drv_data->i2c_dev, DT_INST_REG_ADDR(0), 
-                SI1132_REG_MEAS_RATE, &meas_rate[0], sizeof(meas_rate));
-        if (rc != 0) {
-            return rc;
-        }
-    }
     
     /* Enable visual, IR and UV conversions */
-    rc = i2c_reg_write_byte(drv_data->i2c_dev, 
-            DT_INST_REG_ADDR(0), SI1132_REG_PARAM_WR, 
-            (SI1132_EN_ALS_VIS | SI1132_EN_ALS_IR | SI1132_EN_UV));
-    if (rc != 0) {
-        return rc;
+    err = i2c_reg_write_byte_dt(&config->bus, SI1132_REG_PARAM_WR, 
+            SI1132_EN_ALS_VIS | SI1132_EN_ALS_IR | SI1132_EN_UV);
+    if (err != 0) {
+        return err;
     }
 
-    rc = si1132_write_cmd_reg(drv_data->i2c_dev, 
-            (SI1132_CMD_PARAM_SET | SI1132_PARAM_CHLIST));
-    if (rc != 0) {
-        return rc;
+    err = i2c_reg_write_byte_dt(&config->bus, SI1132_REG_COMMAND, SI1132_CMD_PARAM_SET | SI1132_PARAM_CHLIST);
+    if (err != 0) {
+        return err;
     }
 
-    /* Write default coefficients */
-    rc = i2c_burst_write(drv_data->i2c_dev, DT_INST_REG_ADDR(0),
-            SI1132_REG_UCOEF, &ucoeff[0], sizeof(ucoeff));
-    if (rc != 0) {
-        return rc;
-    }   
+    uint8_t resp, read;
 
-    /* Get factory calibration data */
-    rc = si1132_write_cmd_reg(drv_data->i2c_dev, SI1132_CMD_GET_CAL);
-    if (rc != 0) {
-        return rc;
+    err = i2c_reg_read_byte_dt(&config->bus, SI1132_REG_RESPONSE, &resp);
+    if (err != 0) {
+        return err;
     }
 
-    rc = i2c_burst_read(drv_data->i2c_dev, DT_INST_REG_ADDR(0),
-            SI1132_REG_ALS_VIS_DATA, &drv_data->calib[0], 
-            sizeof(drv_data->calib));
-    if (rc != 0) {
-        return rc;
+    err = i2c_reg_read_byte_dt(&config->bus, SI1132_REG_PARAM_RD, &read);
+    if (err != 0) {
+        return err;
     }
 
-    /* Start the first conversion */
-    rc = si1132_write_cmd_reg(drv_data->i2c_dev, SI1132_CMD_ALS_FORCE);
-    if (rc != 0) {
-        return rc;
-    }
+    LOG_INF("Response: %02x, PARAM_RD: %02x, wrote: %02x\n", resp, read, 
+            SI1132_EN_ALS_VIS | SI1132_EN_ALS_IR | SI1132_EN_UV);
 
-    LOG_DBG("si1132 init ok");
+    // err = si1132_write_cmd_reg(drv_data->i2c_dev, 
+    //         (SI1132_CMD_PARAM_SET | SI1132_PARAM_CHLIST));
+    // if (err != 0) {
+    //     return err;
+    // }
+
+    // /* Write default coefficients */
+    // err = i2c_burst_write(drv_data->i2c_dev, DT_INST_REG_ADDR(0),
+    //         SI1132_REG_UCOEF, &ucoeff[0], sizeof(ucoeff));
+    // if (err != 0) {
+    //     return err;
+    // }   
+
+    // /* Get factory calibration data */
+    // err = si1132_write_cmd_reg(drv_data->i2c_dev, SI1132_CMD_GET_CAL);
+    // if (err != 0) {
+    //     return err;
+    // }
+
+    // err = i2c_burst_read(drv_data->i2c_dev, DT_INST_REG_ADDR(0),
+    //         SI1132_REG_ALS_VIS_DATA, &drv_data->calib[0], 
+    //         sizeof(drv_data->calib));
+    // if (err != 0) {
+    //     return err;
+    // }
+
+    // /* Start the first conversion */
+    // err = si1132_write_cmd_reg(drv_data->i2c_dev, SI1132_CMD_ALS_FORCE);
+    // if (err != 0) {
+    //     return err;
+    // }
+
+    LOG_INF("Init ok");
 
     return 0;
 }
 
-static struct si1132_data si_data;
+static const struct sensor_driver_api si1132_api_funcs = {
+    .sample_fetch = &si1132_sample_fetch,
+    .channel_get = &si1132_channel_get,
+};
 
-DEVICE_DT_INST_DEFINE(0, si1132_init, NULL, &si_data, NULL,
-        POST_KERNEL, CONFIG_SENSOR_INIT_PRIORITY, &si1132_api);
+
+#define SI1132_INIT(inst)                                       \
+    static struct si1132_data si1132_data_##inst;               \
+    static const struct si1132_config si1132_config_##inst = {  \
+        .bus = I2C_DT_SPEC_INST_GET(inst),                      \
+    };                                                          \
+    DEVICE_DT_INST_DEFINE(inst,                                 \
+            si1132_init,                                        \
+            NULL,                                               \
+            &si1132_data_##inst,                                \
+            &si1132_config_##inst,                              \
+            POST_KERNEL,                                        \
+            CONFIG_SENSOR_INIT_PRIORITY,                        \
+            &si1132_api_funcs)
+
+DT_INST_FOREACH_STATUS_OKAY(SI1132_INIT);
