@@ -70,7 +70,7 @@
         ngpios = <8>;
         nint-gpios = <&environ_tracker_header 1 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
         /* Init all outputs to high except for red led */
-        init-out-high = <0xff>;
+        init-out-high = <0xfe>;
         init-out-low = <0x00>;
     };
 
