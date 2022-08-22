@@ -1,2 +1,9 @@
 config SHIELD_ENVIRON_TRACKER_DAUGHTERBOARD_V2
 	def_bool $(shields_list_contains,environ_tracker_daughterboard_v2)
+
+config CONFIG_BOARD_DAUGHTER_PWR_CTRL_INIT_PRIORITY
+	int "Daughterboard power rail init priority"
+	default 50
+	depends on GPIO
+	help
+	  Initialization priority for the daughterboard power rail. Has to be greater than GPIO_INIT_PRIORITY
