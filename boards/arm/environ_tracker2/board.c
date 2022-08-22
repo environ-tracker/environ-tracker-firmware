@@ -38,4 +38,4 @@ static const struct pwr_ctrl_cfg mother_vdd_pwr_ctrl_cfg = {
 
 DEVICE_DEFINE(mother_vdd_pwr_ctrl_init, "", pwr_ctrl_init, NULL, NULL, 
         &mother_vdd_pwr_ctrl_cfg, POST_KERNEL, 
-        CONFIG_BOARD_VDD_PWR_CTRL_INIT_PRIORITY, NULL);
+        CONFIG_BOARD_MOTHER_VDD_PWR_CTRL_INIT_PRIORITY, NULL);
