@@ -85,7 +85,7 @@
         compatible = "st,lsm6dso";
         reg = <0x6a>;
         label = "LSM6DSO";
-        irq-gpios = <&sx1508b 0 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+        irq-gpios = <&sx1508b 0 GPIO_ACTIVE_HIGH>;
     };
     
     lis3mdl: lis3mdl@1c {
