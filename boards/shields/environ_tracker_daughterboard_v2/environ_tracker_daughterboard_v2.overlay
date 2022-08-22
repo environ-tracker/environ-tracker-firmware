@@ -85,6 +85,12 @@
         compatible = "st,lsm6dso";
         reg = <0x6a>;
         label = "LSM6DSO";
+        accel-pm = <1>;
+        accel-range = <0>;
+        accel-odr = <3>;
+        gyro-pm = <1>;
+        gyro-range = <0>;
+        gyro-odr = <3>;
         irq-gpios = <&sx1508b 0 GPIO_ACTIVE_HIGH>;
     };
     
