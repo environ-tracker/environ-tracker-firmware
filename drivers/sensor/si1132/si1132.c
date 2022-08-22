@@ -238,8 +238,8 @@ static int si1132_init(const struct device *dev)
     }
 
     if (ids[0] == SI1132_PART_ID) {
-        LOG_INF("Si1132 device detected. PART_ID: %02x, REV_ID: %02x, "
-                "SEQ_ID: %02x", ids[0], ids[1], ids[2]);
+        LOG_INF("Si1132 device detected. PART_ID: 0x%02x, REV_ID: 0x%02x, "
+                "SEQ_ID: 0x%02x", ids[0], ids[1], ids[2]);
     } else {
         LOG_ERR("Si1132 device not found");
         return -ENOTSUP;
@@ -258,18 +258,13 @@ static int si1132_init(const struct device *dev)
         return err;
     }
 
-    // err = si1132_write_cmd_reg(drv_data->i2c_dev, 
-    //         (SI1132_CMD_PARAM_SET | SI1132_PARAM_CHLIST));
-    // if (err != 0) {
-    //     return err;
-    // }
 
-    // /* Write default coefficients */
-    // err = i2c_burst_write(drv_data->i2c_dev, DT_INST_REG_ADDR(0),
-    //         SI1132_REG_UCOEF, &ucoeff[0], sizeof(ucoeff));
-    // if (err != 0) {
-    //     return err;
-    // }   
+    /* Write default coefficients */
+    err = i2c_burst_write_dt(&config->bus, SI1132_REG_UCOEF, &ucoeff[0], 
+            ARRAY_SIZE(ucoeff));
+    if (err != 0) {
+        return err;
+    }   
 
     // /* Get factory calibration data */
     // err = si1132_write_cmd_reg(drv_data->i2c_dev, SI1132_CMD_GET_CAL);
