@@ -23,7 +23,7 @@ struct si1132_data {
     uint16_t vis_light;
     uint16_t ir_light;
     uint16_t uv_index;
-    uint8_t calib[4];
+    uint8_t calib[6];
 };
 
 struct si1132_config {
@@ -210,7 +210,7 @@ static int si1132_channel_get(const struct device *dev,
 static int si1132_init(const struct device *dev)
 {
     struct si1132_data *data = dev->data;
-    struct si1132_config *config = dev->config;
+    const struct si1132_config *config = dev->config;
     int err;
     uint8_t ids[3] = {0};
     uint8_t ucoeff[4] = {0x7B, 0x6B, 0x01, 0x00};
@@ -266,21 +266,27 @@ static int si1132_init(const struct device *dev)
         return err;
     }   
 
-    // /* Get factory calibration data */
-    // err = si1132_write_cmd_reg(drv_data->i2c_dev, SI1132_CMD_GET_CAL);
-    // if (err != 0) {
-    //     return err;
-    // }
+    /* Get factory calibration data */
+    err = si1132_write_cmd_reg(dev, SI1132_CMD_GET_CAL);
+    if (err != 0) {
+        return err;
+    }
 
-    // err = i2c_burst_read(drv_data->i2c_dev, DT_INST_REG_ADDR(0),
-    //         SI1132_REG_ALS_VIS_DATA, &drv_data->calib[0], 
-    //         sizeof(drv_data->calib));
-    // if (err != 0) {
-    //     return err;
-    // }
+    err = i2c_burst_read_dt(&config->bus, SI1132_REG_ALS_VIS_DATA, 
+            &data->calib[0], 4);
+    if (err != 0) {
+        return err;
+    }
 
-    // /* Start the first conversion */
-    // err = si1132_write_cmd_reg(drv_data->i2c_dev, SI1132_CMD_ALS_FORCE);
+    err = i2c_burst_read_dt(&config->bus, SI1132_REG_AUX_DATA, 
+            &data->calib[4], 2);
+    if (err != 0) {
+        return err;
+    }
+
+
+    /* Start the first conversion */
+    // err = si1132_write_cmd_reg(dev, SI1132_CMD_ALS_FORCE);
     // if (err != 0) {
     //     return err;
     // }
