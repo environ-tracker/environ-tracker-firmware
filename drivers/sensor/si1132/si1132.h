@@ -1,6 +1,9 @@
 #ifndef _SI1132_H_
 #define _SI1132_H_
 
+/* Max number of attempts to get a valid response register value */
+#define SI1132_MAX_RESPONSE_REG_TRYS 5
+
 /* Si1132 HW_KEY Magic number */
 #define SI1132_HW_KEY_MAGIC     0x17
 

@@ -12,11 +12,9 @@
 
 #include "si1132.h"
 
-LOG_MODULE_REGISTER(SI1132, CONFIG_SENSOR_LOG_LEVEL);
+LOG_MODULE_REGISTER(si1132, CONFIG_SENSOR_LOG_LEVEL);
 
 #define DT_DRV_COMPAT silabs_si1132
-
-#define SI1132_MAX_RESPONSE_REG_TRYS    5
 
 
 struct si1132_data {
@@ -29,6 +27,7 @@ struct si1132_data {
 struct si1132_config {
     struct i2c_dt_spec bus;
 };
+
 
 /**
  * @brief Handles the given response register value.
@@ -82,8 +81,9 @@ static int si1132_response_handler(uint8_t response)
 static int si1132_write_cmd_reg(const struct device *dev, uint8_t cmd)
 {
     struct i2c_dt_spec *bus = &((struct si1132_config *)dev->config)->bus;
-    int err;
-    uint8_t response;
+    uint8_t response, trys = 0;
+    int err, handled_response;
+    
 
     /* Clear the response register */
     err = i2c_reg_write_byte_dt(bus, SI1132_REG_COMMAND, SI1132_CMD_NOP);
@@ -106,8 +106,6 @@ static int si1132_write_cmd_reg(const struct device *dev, uint8_t cmd)
     }
 
     /* Verify command ran without errors */
-    uint8_t trys = 0;
-    int handled_response;
     while (1) {
         err = i2c_reg_read_byte_dt(bus, SI1132_REG_RESPONSE, &response);
         if (err != 0) {
@@ -120,7 +118,8 @@ static int si1132_write_cmd_reg(const struct device *dev, uint8_t cmd)
             return 0;
         }
 
-        LOG_ERR("Trys: %d", ++trys);
+        /* Sleep for 100us to wait */
+        k_usleep(100);
 
         if (trys > SI1132_MAX_RESPONSE_REG_TRYS) {
             return handled_response;
@@ -132,14 +131,14 @@ static int si1132_write_cmd_reg(const struct device *dev, uint8_t cmd)
 static int si1132_sample_fetch(const struct device *dev, 
         enum sensor_channel chan)
 {
-    int err;
-    uint8_t vis_ir_data[4], uv_data[2];
+    struct i2c_dt_spec *bus = &((struct si1132_config *)dev->config)->bus;
     struct si1132_data *si_data = dev->data;
-    const struct si1132_config *config = dev->config;
-
+    uint8_t vis_ir_data[4], uv_data[2];
+    int err;
+    
 
     /* Get visible and IR light data */
-    err = i2c_burst_read_dt(&config->bus, SI1132_REG_ALS_VIS_DATA, 
+    err = i2c_burst_read_dt(bus, SI1132_REG_ALS_VIS_DATA, 
             vis_ir_data, ARRAY_SIZE(vis_ir_data));
     if (err != 0) {
         LOG_ERR("Error while reading VIS and IR data registers, err: %d", err);
@@ -152,7 +151,7 @@ static int si1132_sample_fetch(const struct device *dev,
 
 
     /* Get UV data */
-    err = i2c_burst_read_dt(&config->bus, SI1132_REG_AUX_DATA, 
+    err = i2c_burst_read_dt(bus, SI1132_REG_AUX_DATA, 
             uv_data, ARRAY_SIZE(uv_data));
     if (err != 0) {
         LOG_ERR("Error while reading UV data register, err: %d", err);
@@ -204,36 +203,35 @@ static int si1132_channel_get(const struct device *dev,
 
 static int si1132_init(const struct device *dev)
 {
+    struct i2c_dt_spec *bus = &((struct si1132_config *)dev->config)->bus;
     struct si1132_data *data = dev->data;
-    const struct si1132_config *config = dev->config;
-    int err;
-    uint8_t ids[3] = {0};
     uint8_t ucoeff[4] = {0x7B, 0x6B, 0x01, 0x00};
-    
+    uint8_t ids[3] = {0};
+    int err;
 
 
-    LOG_INF("Initialise device %s", dev->name);
+    LOG_DBG("Initialise device %s", dev->name);
 
-    if (!device_is_ready(config->bus.bus)) {
+    if (!device_is_ready(bus->bus)) {
         LOG_ERR("i2c bus not ready");
         return -ENODEV;
     }
 
     // Write to HW_KEY register as required
-    err = i2c_reg_write_byte_dt(&config->bus, SI1132_REG_HW_KEY, 
+    err = i2c_reg_write_byte_dt(bus, SI1132_REG_HW_KEY, 
             SI1132_HW_KEY_MAGIC);
     if (err != 0) {
         return err;
     }
 
-    err = i2c_burst_read_dt(&config->bus, SI1132_REG_PART_ID, &ids[0], 
+    err = i2c_burst_read_dt(bus, SI1132_REG_PART_ID, &ids[0], 
             ARRAY_SIZE(ids));
     if (err != 0) {
         return err;
     }
 
     if (ids[0] == SI1132_PART_ID) {
-        LOG_INF("Si1132 device detected. PART_ID: 0x%02x, REV_ID: 0x%02x, "
+        LOG_DBG("Si1132 device detected. PART_ID: 0x%02x, REV_ID: 0x%02x, "
                 "SEQ_ID: 0x%02x", ids[0], ids[1], ids[2]);
     } else {
         LOG_ERR("Si1132 device not found");
@@ -242,7 +240,7 @@ static int si1132_init(const struct device *dev)
 
     
     /* Enable visual, IR and UV conversions */
-    err = i2c_reg_write_byte_dt(&config->bus, SI1132_REG_PARAM_WR, 
+    err = i2c_reg_write_byte_dt(bus, SI1132_REG_PARAM_WR, 
             SI1132_EN_ALS_VIS | SI1132_EN_ALS_IR | SI1132_EN_UV);
     if (err != 0) {
         return err;
@@ -255,7 +253,7 @@ static int si1132_init(const struct device *dev)
 
 
     /* Write default coefficients */
-    err = i2c_burst_write_dt(&config->bus, SI1132_REG_UCOEF, &ucoeff[0], 
+    err = i2c_burst_write_dt(bus, SI1132_REG_UCOEF, &ucoeff[0], 
             ARRAY_SIZE(ucoeff));
     if (err != 0) {
         return err;
@@ -267,13 +265,13 @@ static int si1132_init(const struct device *dev)
         return err;
     }
 
-    err = i2c_burst_read_dt(&config->bus, SI1132_REG_ALS_VIS_DATA, 
+    err = i2c_burst_read_dt(bus, SI1132_REG_ALS_VIS_DATA, 
             &data->calib[0], 4);
     if (err != 0) {
         return err;
     }
 
-    err = i2c_burst_read_dt(&config->bus, SI1132_REG_AUX_DATA, 
+    err = i2c_burst_read_dt(bus, SI1132_REG_AUX_DATA, 
             &data->calib[4], 2);
     if (err != 0) {
         return err;
@@ -286,7 +284,7 @@ static int si1132_init(const struct device *dev)
         return err;
     }
 
-    LOG_INF("Init ok");
+    LOG_DBG("Init ok");
 
     return 0;
 }
