@@ -3,6 +3,8 @@
 #include <drivers/sensor.h>
 #include <stdio.h>
 
+#include <drivers/i2c.h>
+
 #include <logging/log.h>
 
 LOG_MODULE_REGISTER(test_app);
@@ -107,6 +109,33 @@ static void fetch_and_display_si(const struct device *dev)
 
 }
 
+static void si1132_test(void)
+{
+    const struct device *i2c_dev = DEVICE_DT_GET(DT_NODELABEL(i2c0));
+    uint16_t addr = 0x0060;
+    uint8_t resp, read;
+
+    if (i2c_dev == NULL) {
+        LOG_ERR("Couldn't get i2c dev");
+        return;
+    }
+
+    i2c_reg_write_byte(i2c_dev, addr, 0x07, 0x17);
+
+    i2c_reg_write_byte(i2c_dev, addr, 0x17, 0b10111111);
+
+    i2c_reg_write_byte(i2c_dev, addr, 0x18, 0b10100001);
+
+    k_sleep(K_MSEC(1));
+
+    i2c_reg_read_byte(i2c_dev, addr, 0x20, &resp);
+
+    i2c_reg_read_byte(i2c_dev, addr, 0x2e, &read);
+
+    LOG_WRN("Got: response %02x, %02x\n", resp, read);
+
+}
+
 
 void main(void)
 {
@@ -136,6 +165,7 @@ void main(void)
     while (1) {
         k_sleep(K_MSEC(3000));
 
+        si1132_test();
 
         fetch_and_display_lsm(lsm6dso);
 
