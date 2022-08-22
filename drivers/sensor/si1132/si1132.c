@@ -16,6 +16,8 @@ LOG_MODULE_REGISTER(SI1132, CONFIG_SENSOR_LOG_LEVEL);
 
 #define DT_DRV_COMPAT silabs_si1132
 
+#define SI1132_MAX_RESPONSE_REG_TRYS    5
+
 
 struct si1132_data {
     uint16_t vis_light;
@@ -63,6 +65,67 @@ static int si1132_response_handler(uint8_t response)
     }
 
     return -EOVERFLOW;
+}
+
+/**
+ * @brief Writes a command to the command register, following the command
+ *        protocol set in the Si1132 datasheet Section 4.2
+ * 
+ * @param dev Si1132 device to write to
+ * @param cmd Command to write
+ * @return 0 on success
+ *        -EINVAL on an invalid setting error
+ *        -EOVERFLOW on a register overflow error
+ *        -ENOMSG on an undocumented error
+ *         negative i2c error code on an  i2c error
+ */
+static int si1132_write_cmd_reg(const struct device *dev, uint8_t cmd)
+{
+    struct i2c_dt_spec *bus = &((struct si1132_config *)dev->config)->bus;
+    int err;
+    uint8_t response;
+
+    /* Clear the response register */
+    err = i2c_reg_write_byte_dt(bus, SI1132_REG_COMMAND, SI1132_CMD_NOP);
+    if (err != 0) {
+        return err;
+    }
+
+    /* Verify response register is cleared */
+    err = i2c_reg_read_byte_dt(bus, SI1132_REG_RESPONSE, &response);
+    if (err != 0) {
+        return err;
+    } else if (response != SI1132_CMD_NOP) {
+        return si1132_response_handler(response);
+    }
+
+    /* Run given command */
+    err = i2c_reg_write_byte_dt(bus, SI1132_REG_COMMAND, cmd);
+    if (err != 0) {
+        return err;
+    }
+
+    /* Verify command ran without errors */
+    uint8_t trys = 0;
+    int handled_response;
+    while (1) {
+        err = i2c_reg_read_byte_dt(bus, SI1132_REG_RESPONSE, &response);
+        if (err != 0) {
+            return err;
+        }
+
+        /* If no errors and incremented by 1, then command was successful */
+        handled_response = si1132_response_handler(response);
+        if (handled_response == 0 && response == 1) {
+            return 0;
+        }
+
+        LOG_ERR("Trys: %d", ++trys);
+
+        if (trys > SI1132_MAX_RESPONSE_REG_TRYS) {
+            return handled_response;
+        }
+    };
 }
 
 
@@ -190,25 +253,10 @@ static int si1132_init(const struct device *dev)
         return err;
     }
 
-    err = i2c_reg_write_byte_dt(&config->bus, SI1132_REG_COMMAND, SI1132_CMD_PARAM_SET | SI1132_PARAM_CHLIST);
+    err = si1132_write_cmd_reg(dev, SI1132_CMD_PARAM_SET | SI1132_PARAM_CHLIST);
     if (err != 0) {
         return err;
     }
-
-    uint8_t resp, read;
-
-    err = i2c_reg_read_byte_dt(&config->bus, SI1132_REG_RESPONSE, &resp);
-    if (err != 0) {
-        return err;
-    }
-
-    err = i2c_reg_read_byte_dt(&config->bus, SI1132_REG_PARAM_RD, &read);
-    if (err != 0) {
-        return err;
-    }
-
-    LOG_INF("Response: %02x, PARAM_RD: %02x, wrote: %02x\n", resp, read, 
-            SI1132_EN_ALS_VIS | SI1132_EN_ALS_IR | SI1132_EN_UV);
 
     // err = si1132_write_cmd_reg(drv_data->i2c_dev, 
     //         (SI1132_CMD_PARAM_SET | SI1132_PARAM_CHLIST));
