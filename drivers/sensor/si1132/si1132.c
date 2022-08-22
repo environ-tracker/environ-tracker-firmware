@@ -129,63 +129,58 @@ static int si1132_write_cmd_reg(const struct device *dev, uint8_t cmd)
 }
 
 
-static int si1132_sample_fetch(const struct device *dev,
-                    enum sensor_channel chan)
+static int si1132_sample_fetch(const struct device *dev, 
+        enum sensor_channel chan)
 {
-    // int rc;
-//     uint8_t vis_ir_data[4], uv_data[2];
-//     struct si1132_data *si_data = dev->data;
-//     struct si1132_config *config = dev->config;
+    int err;
+    uint8_t vis_ir_data[4], uv_data[2];
+    struct si1132_data *si_data = dev->data;
+    const struct si1132_config *config = dev->config;
 
-//     __ASSERT_NO_MSG(chan == SENSOR_CHAN_ALL);
 
-//     /* Get visible and IR light data */
-//     rc = i2c_burst_read_dt(&config->bus,
-//             SI1132_REG_ALS_VIS_DATA, &vis_ir_data[0], sizeof(vis_ir_data));
-//     if (rc == 0) {
-//         si_data->vis_light = sys_le16_to_cpu(
-//                 vis_ir_data[0] << 8 | vis_ir_data[1]);
-//         si_data->ir_light = sys_le16_to_cpu(vis_ir_data[2] << 8 | vis_ir_data[3]);
+    /* Get visible and IR light data */
+    err = i2c_burst_read_dt(&config->bus, SI1132_REG_ALS_VIS_DATA, 
+            vis_ir_data, ARRAY_SIZE(vis_ir_data));
+    if (err != 0) {
+        LOG_ERR("Error while reading VIS and IR data registers, err: %d", err);
+        return err;
+    }    
 
-//         // TODO: apply factory calibration
-//     } else {
-//         LOG_ERR("Error while reading VIS and IR data registers");
-//         return rc;
-//     }
+    // TODO: apply factory calibration
+    si_data->vis_light = sys_le16_to_cpu(vis_ir_data[1] << 8 | vis_ir_data[0]);
+    si_data->ir_light = sys_le16_to_cpu(vis_ir_data[3] << 8 | vis_ir_data[2]);
 
-//     /* Get UV data */
-//     rc = i2c_burst_read_dt(&config->bus,
-//             SI1132_REG_AUX_DATA, &uv_data[0], sizeof(uv_data));
-//     if (rc == 0) {
-//         si_data->uv_index = sys_le16_to_cpu(uv_data[0] << 8 | uv_data[1]);
-//     } else {
-//         LOG_ERR("Error while reading UV data register");
-//         return rc;
-//     }
 
-//     /* Start the next conversion */
-//     // rc = si1132_write_cmd_reg(si_data->i2c_dev, SI1132_CMD_ALS_FORCE);
+    /* Get UV data */
+    err = i2c_burst_read_dt(&config->bus, SI1132_REG_AUX_DATA, 
+            uv_data, ARRAY_SIZE(uv_data));
+    if (err != 0) {
+        LOG_ERR("Error while reading UV data register, err: %d", err);
+        return err;
+    }
 
-//     return rc;
-    return 0;
+    si_data->uv_index = sys_le16_to_cpu(uv_data[1] << 8 | uv_data[0]);
+
+  
+    /* Start the next conversion */
+    err = si1132_write_cmd_reg(dev, SI1132_CMD_ALS_FORCE);
+
+    return err;
 }
 
-static int si1132_channel_get(const struct device *dev,
-                    enum sensor_channel chan,
-                    struct sensor_value *val)
+static int si1132_channel_get(const struct device *dev, 
+        enum sensor_channel chan, struct sensor_value *val)
 {
     struct si1132_data *si_data = dev->data;
 
     switch (chan) {
     case SENSOR_CHAN_LIGHT:
-        /* NOTE: Currently only 6lx resolution is supported */
         val->val1 = si_data->vis_light;
         val->val2 = 0;
 
         LOG_DBG("visible light (lx) = val1:%d, val2:%d", val->val1, val->val2);
         break;
     case SENSOR_CHAN_IR:
-        /* NOTE: Currently only 6lx resolution is supported */
         val->val1 = si_data->ir_light;
         val->val2 = 0;
 
@@ -286,10 +281,10 @@ static int si1132_init(const struct device *dev)
 
 
     /* Start the first conversion */
-    // err = si1132_write_cmd_reg(dev, SI1132_CMD_ALS_FORCE);
-    // if (err != 0) {
-    //     return err;
-    // }
+    err = si1132_write_cmd_reg(dev, SI1132_CMD_ALS_FORCE);
+    if (err != 0) {
+        return err;
+    }
 
     LOG_INF("Init ok");
 
