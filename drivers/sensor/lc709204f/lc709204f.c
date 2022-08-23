@@ -288,17 +288,16 @@ static int lc709204f_init(const struct device *dev)
     /* Clear POR bit */
     status &= ~STATUS_INITIALIZED_MASK;
     err = lc709204f_reg_write(&config->i2c, BATTERY_STATUS, status);
-    if (err != 0) {
-        return err;
-    }
+    
+    return err;
 }
 
 
 static const struct sensor_driver_api lc709204f_api_funcs = {
     .sample_fetch = lc709204f_sample_fetch,
     .channel_get = lc709204f_channel_get,
-    .attr_set = lc709204f_attr_set,
 #ifdef CONFIG_LC709204F_TRIGGER
+    .attr_set = lc709204f_attr_set,
     .trigger_set = lc709204f_trigger_set,
 #endif /* CONFIG_LC709204F_TRIGGER */
 };
