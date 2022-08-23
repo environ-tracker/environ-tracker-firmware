@@ -244,7 +244,7 @@ static int lc709204f_init(const struct device *dev)
         return err;
     }
 
-    if (!(status & STATUS_INITIALIZED)) {
+    if (!(status & STATUS_INITIALIZED_MASK)) {
         LOG_DBG("No POR event detected - skip device configuration");
         return 0;
     }
@@ -286,7 +286,7 @@ static int lc709204f_init(const struct device *dev)
     }
 
     /* Clear POR bit */
-    status &= ~STATUS_INITIALIZED;
+    status &= ~STATUS_INITIALIZED_MASK;
     err = lc709204f_reg_write(&config->i2c, BATTERY_STATUS, status);
     if (err != 0) {
         return err;

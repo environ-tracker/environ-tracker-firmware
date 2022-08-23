@@ -79,13 +79,13 @@ enum lc709204f_status_bit_masks {
 
 /* Status bit masks */
 enum lc709204f_battery_status_bit_masks {  
-    STATUS_DISCHARGING  = 1 << 6,
-    STATUS_INITIALIZED  = 1 << 7,
-    ALARM_LOW_TEMP      = 1 << 8,
-    ALARM_LOW_RSOC      = 1 << 9,
-    ALARM_LOW_VOLTAGE   = 1 << 11,
-    ALARM_HIGH_TEMP     = 1 << 12,
-    ALARM_HIGH_VOLTAGE  = 1 << 15,
+    STATUS_DISCHARGING_MASK  = 1 << 6,
+    STATUS_INITIALIZED_MASK  = 1 << 7,
+    ALARM_LOW_TEMP_MASK      = 1 << 8,
+    ALARM_LOW_RSOC_MASK      = 1 << 9,
+    ALARM_LOW_VOLTAGE_MASK   = 1 << 11,
+    ALARM_HIGH_TEMP_MASK     = 1 << 12,
+    ALARM_HIGH_VOLTAGE_MASK  = 1 << 15,
 };
 
 struct lc709204f_data {

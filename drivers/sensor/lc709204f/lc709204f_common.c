@@ -72,13 +72,13 @@ int lc709204f_status_reg_get(const struct i2c_dt_spec *i2c,
         return err;
     }
 
-    status->high_cell_voltage = !!(register_data & ALARM_HIGH_VOLTAGE);
-    status->low_cell_voltage = !!(register_data & ALARM_LOW_VOLTAGE);
-    status->high_cell_temp = !!(register_data & ALARM_HIGH_TEMP);
-    status->low_cell_temp = !!(register_data & ALARM_LOW_TEMP);
-    status->low_rsoc = !!(register_data & ALARM_LOW_RSOC);
-    status->initialized = !!(register_data & STATUS_INITIALIZED);
-    status->discharging = !!(register_data & STATUS_DISCHARGING);
+    status->high_cell_voltage = !!(register_data & ALARM_HIGH_VOLTAGE_MASK);
+    status->low_cell_voltage = !!(register_data & ALARM_LOW_VOLTAGE_MASK);
+    status->high_cell_temp = !!(register_data & ALARM_HIGH_TEMP_MASK);
+    status->low_cell_temp = !!(register_data & ALARM_LOW_TEMP_MASK);
+    status->low_rsoc = !!(register_data & ALARM_LOW_RSOC_MASK);
+    status->initialized = !!(register_data & STATUS_INITIALIZED_MASK);
+    status->discharging = !!(register_data & STATUS_DISCHARGING_MASK);
 
     return 0;
 }
