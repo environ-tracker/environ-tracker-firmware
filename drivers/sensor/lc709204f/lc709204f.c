@@ -29,16 +29,18 @@ static int lc709204f_attr_set(const struct device *dev,
         const struct sensor_value *val)
 {
     struct lc709204f_data *data = dev->data;
+    int32_t *val1, *val2;
     int err = 0;
 
-    k_mutex_lock(&data->threshold_mutex, M_SEC(1));
+    val1 = &val->val1;
+    val2 = &val->val2;
 
     switch (chan) {
     case SENSOR_CHAN_GAUGE_VOLTAGE:
         if (attr == SENSOR_ATTR_UPPER_THRESH) {
-            data->alarm_high_voltage_threshold = val1 * 1000 + val2 / 1000;
+            data->alarm_high_voltage_threshold = *val1 * 1000 + *val2 / 1000;
         } else if (attr == SENSOR_ATTR_LOWER_THRESH) {
-            data->alarm_low_voltage_threshold = val1 * 1000 + val2 / 1000;
+            data->alarm_low_voltage_threshold = *val1 * 1000 + *val2 / 1000;
         } else {
             LOG_WRN("Attribute not supported for voltage alarm");
             err = -ENOTSUP;
@@ -46,9 +48,9 @@ static int lc709204f_attr_set(const struct device *dev,
         break;
     case SENSOR_CHAN_GAUGE_TEMP:
         if (attr == SENSOR_ATTR_UPPER_THRESH) {
-            data->alarm_high_temp_threshold = val1 * 10 + val2 / 100000;
+            data->alarm_high_temp_threshold = *val1 * 10 + *val2 / 100000;
         } else if (attr == SENSOR_ATTR_LOWER_THRESH) {
-            data->alarm_low_temp_threshold = val1 * 10 + val2 / 100000;
+            data->alarm_low_temp_threshold = *val1 * 10 + *val2 / 100000;
         } else {
             LOG_WRN("Attribute not supported for temperature alarm");
             err = -ENOTSUP;
@@ -56,7 +58,7 @@ static int lc709204f_attr_set(const struct device *dev,
         break;
     case SENSOR_CHAN_GAUGE_STATE_OF_CHARGE:
         if (attr == SENSOR_ATTR_LOWER_THRESH) {
-            data->alarm_low_rsoc_threshold = val1 * 10 + val2 / 100000;
+            data->alarm_low_rsoc_threshold = *val1 * 10 + *val2 / 100000;
         } else {
             LOG_WRN("Attribute not supported for state of charge alarm");
             err = -ENOTSUP;
