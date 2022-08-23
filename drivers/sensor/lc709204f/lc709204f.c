@@ -315,8 +315,8 @@ static const struct sensor_driver_api lc709204f_api_funcs = {
 
 #define LC709204F_INIT(inst)                                        \
     static struct lc709204f_data lc709204f_data_##inst;             \
-    static const struct lc709204f_config lc709204f_config_##inst = {\
-        .bus_name = I2C_DT_SPEC_INSTGET(inst),                      \
+    static const struct lc709204f_config lc709204f_config_##inst = {    \
+        .i2c = I2C_DT_SPEC_INST_GET(inst),                      \
         .design_capacity = DT_INST_PROP(inst, design_capacity),     \
         .design_voltage = DT_INST_PROP(inst, design_voltage),       \
         .desired_voltage = DT_INST_PROP(inst, desired_voltage),     \
