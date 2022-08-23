@@ -329,8 +329,8 @@ static const struct sensor_driver_api lc709204f_api_funcs = {
         .charging_termination_current = DT_INST_PROP(inst, chg_term_current), \
         .apa_value = DT_INST_PROP(inst, apa_value),                 \
         .battery_type = DT_INST_PROP(inst, battery_type),           \
-        COND_CODE_1(DT_INST_NODE_HAS_PROP(inst, nint_gpios),        \ 
-                (LC709204F_CFG_IRQ(inst)), ()),                     \
+        COND_CODE_1(DT_INST_NODE_HAS_PROP(inst, nint_gpios),        \
+                (LC709204F_CFG_IRQ(inst)), ())                     \
     };                                                              \
     DEVICE_DT_INST_DEFINE(inst,                                     \
             lc709204f_init,                                         \
