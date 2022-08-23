@@ -100,8 +100,8 @@ static int lc709204f_sample_fetch(const struct device *dev,
         enum sensor_channel chan) 
 {
     struct lc709204f_data *data = dev->data;
-    struct lc709204f_config *config = dev->config;
-    uint8_t time_buf[2] = {0};
+    const struct lc709204f_config *config = dev->config;
+    uint16_t time_buf[2] = {0};
 
     struct {
         enum lc709204f_commands command;
@@ -157,7 +157,7 @@ static int lc709204f_sample_fetch(const struct device *dev,
 static int lc709204f_channel_get(const struct device *dev, 
         enum sensor_channel chan, struct sensor_value *val)
 {
-    struct lc709204f_config *config = dev->config;
+    const struct lc709204f_config *config = dev->config;
     struct lc709204f_data *data = dev->data;
 
     switch (chan) {
@@ -226,7 +226,7 @@ static int lc709204f_channel_get(const struct device *dev,
 static int lc709204f_init(const struct device *dev)
 {
     struct lc709204f_data *data = dev->data;
-    struct lc709204f_config *config = dev->config;
+    const struct lc709204f_config *config = dev->config;
     int err;
     uint16_t status, tmp;
 
