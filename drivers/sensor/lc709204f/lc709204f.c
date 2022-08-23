@@ -25,7 +25,7 @@ LOG_MODULE_REGISTER(lc709204f, CONFIG_SENSOR_LOG_LEVEL);
  * @return 0 on success, negative error code on failure 
  */
 static int lc709204f_attr_set(const struct device *dev, 
-        enum sensor_channel *chan, enum sensor_attribute attr, 
+        enum sensor_channel chan, enum sensor_attribute attr, 
         const struct sensor_value *val)
 {
     struct lc709204f_data *data = dev->data;
