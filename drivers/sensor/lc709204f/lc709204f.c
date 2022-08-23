@@ -4,6 +4,7 @@
 #include <drivers/i2c.h>
 #include <drivers/sensor.h>
 #include <sys/util.h>
+#include <sys/byteorder.h>
 
 #include <logging/log.h>
 LOG_MODULE_REGISTER(lc709204f, CONFIG_SENSOR_LOG_LEVEL);
