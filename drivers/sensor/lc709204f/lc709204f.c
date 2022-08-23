@@ -35,6 +35,8 @@ static int lc709204f_attr_set(const struct device *dev,
     val1 = &val->val1;
     val2 = &val->val2;
 
+    k_mutex_lock(&data->threshold_mutex, K_MSEC(1));
+
     switch (chan) {
     case SENSOR_CHAN_GAUGE_VOLTAGE:
         if (attr == SENSOR_ATTR_UPPER_THRESH) {
