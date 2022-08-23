@@ -13,7 +13,7 @@ LOG_MODULE_REGISTER(lc709204f, CONFIG_SENSOR_LOG_LEVEL);
 
 #define DT_DRV_COMPAT onnn_lc709204f
 
-
+#ifdef CONFIG_LC709204F_TRIGGER
 /**
  * @brief Set a sensor device attribute
  * NOTE: Only alarm attributes are available for this sensor.
@@ -75,7 +75,7 @@ static int lc709204f_attr_set(const struct device *dev,
 
     return 0;
 }
-
+#endif /* CONFIG_LC709204F_TRIGGER */
 
 /**
  * @brief Converts the LC709204F's temperature representation to units of 0.1 
