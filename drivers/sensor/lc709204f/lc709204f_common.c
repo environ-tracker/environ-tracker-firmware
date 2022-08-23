@@ -62,7 +62,7 @@ int lc709204f_reg_read(const struct i2c_dt_spec *i2c,
  * @return 0 on success, negative error code on failure 
  */
 int lc709204f_status_reg_get(const struct i2c_dt_spec *i2c,
-        lc709204f_battery_status_reg *status)
+        struct lc709204f_battery_status_reg *status)
 {
     uint16_t register_data;
     int err;

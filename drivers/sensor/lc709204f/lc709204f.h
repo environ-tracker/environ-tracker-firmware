@@ -179,7 +179,8 @@ int lc709204f_reg_write(const struct i2c_dt_spec *, uint8_t, uint16_t);
 
 int lc709204f_reg_read(const struct i2c_dt_spec *, uint8_t, uint16_t *);
 
-int lc709204f_status_reg_get(const struct i2c_dt_spec *, lc709204f_battery_status_reg *);
+int lc709204f_status_reg_get(const struct i2c_dt_spec *, 
+        struct lc709204f_battery_status_reg *);
 
 #ifdef CONFIG_LC709204F_TRIGGER
 int lc709204f_clear_interrupt_flag(const struct device *, uint16_t);
