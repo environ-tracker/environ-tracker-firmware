@@ -137,8 +137,7 @@ static int lc709204f_sample_fetch(const struct device *dev,
         int rc = lc709204f_reg_read(&config->i2c, (uint8_t)cmds[i].command, 
                 cmds[i].dest);
         if (rc != 0) {
-            LOG_ERR("Failed to read channel #%d with cmd: %02x", 
-                    cmds[i].command, cmds[i].dest);
+            LOG_ERR("Failed to read channel #%d", cmds[i].command);
             return rc;
         }
     }
