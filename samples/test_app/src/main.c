@@ -109,6 +109,25 @@ static void fetch_and_display_si(const struct device *dev)
 
 }
 
+static void fetch_and_display_lc(const struct device *dev)
+{
+    struct sensor_value voltage, capacity, soh, soc;
+
+    if (dev == NULL) {
+        return;
+    }
+
+    sensor_sample_fetch(dev);
+
+    sensor_channel_get(dev, SENSOR_CHAN_GAUGE_VOLTAGE, &voltage);
+    sensor_channel_get(dev, SENSOR_CHAN_GAUGE_FULL_CHARGE_CAPACITY, &capacity);
+    sensor_channel_get(dev, SENSOR_CHAN_GAUGE_STATE_OF_HEALTH, &soh);
+    sensor_channel_get(dev, SENSOR_CHAN_GAUGE_STATE_OF_CHARGE, &soc);
+
+    LOG_INF("volt: %f, capacity: %d, SoH: %d%%, SoC: %f%%", out_ev(&voltage), 
+            capacity.val1, soh.val1, out_ev(&soc));
+}
+
 
 void main(void)
 {
@@ -121,6 +140,9 @@ void main(void)
     const struct device *si1132 = device_get_binding(DT_LABEL(
             DT_INST(0, silabs_si1132)));
 
+    const struct device *lc709204f = device_get_binding(DT_LABEL(
+            DT_INST(0, onnn_lc709204f)));
+
     
     if (bme680 != NULL)
         LOG_WRN("Device %p name is %s", bme680, bme680->name);
@@ -130,6 +152,9 @@ void main(void)
     
     if (si1132 != NULL)
         LOG_WRN("Device %p name is %s", si1132, si1132->name);
+
+    if (lc709204f != NULL)
+        LOG_WRN("Device %p name is %s", lc709204f, lc709204f->name);
 
     if (set_sampling_freq(lsm6dso) != 0) {
         LOG_ERR("Unable to set sampling frequency of LSM6DSO");
@@ -143,6 +168,8 @@ void main(void)
         fetch_and_display_bme(bme680);
 
         fetch_and_display_si(si1132);
+
+        fetch_and_display_lc(lc709204f);
 
         LOG_INF("\n");
         
