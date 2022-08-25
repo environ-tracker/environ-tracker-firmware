@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include <drivers/i2c.h>
+#include <sys/crc.h>
 
 #include <logging/log.h>
 
@@ -111,7 +112,7 @@ static void fetch_and_display_si(const struct device *dev)
 
 static void fetch_and_display_lc(const struct device *dev)
 {
-    struct sensor_value voltage, capacity, soh, soc;
+    struct sensor_value voltage, capacity, soh, soc, time;
 
     if (dev == NULL) {
         return;
@@ -123,9 +124,10 @@ static void fetch_and_display_lc(const struct device *dev)
     sensor_channel_get(dev, SENSOR_CHAN_GAUGE_FULL_CHARGE_CAPACITY, &capacity);
     sensor_channel_get(dev, SENSOR_CHAN_GAUGE_STATE_OF_HEALTH, &soh);
     sensor_channel_get(dev, SENSOR_CHAN_GAUGE_STATE_OF_CHARGE, &soc);
+    sensor_channel_get(dev, SENSOR_CHAN_GAUGE_TIME_TO_EMPTY, &time);
 
-    LOG_INF("volt: %f, capacity: %d, SoH: %d%%, SoC: %f%%", out_ev(&voltage), 
-            capacity.val1, soh.val1, out_ev(&soc));
+    LOG_INF("volt: %f, capacity: %d, SoH: %d%%, SoC: %f%%, TTE: %d mins", 
+            out_ev(&voltage), capacity.val1, soh.val1, out_ev(&soc), time.val1);
 }
 
 
@@ -159,6 +161,7 @@ void main(void)
     if (set_sampling_freq(lsm6dso) != 0) {
         LOG_ERR("Unable to set sampling frequency of LSM6DSO");
     }
+
 
     while (1) {
         k_sleep(K_MSEC(3000));
