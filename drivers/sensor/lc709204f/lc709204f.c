@@ -234,7 +234,7 @@ static int lc709204f_init(const struct device *dev)
     int err;
     uint16_t status, tmp;
 
-    LOG_INF("Initialise device %s", dev->name);
+    LOG_DBG("Initialise device %s", dev->name);
     data->dev = dev;
 
     if (!device_is_ready(config->i2c.bus)) {
