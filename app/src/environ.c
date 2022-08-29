@@ -40,11 +40,16 @@ void environ_fetch_thread(void *a, void *b, void *c)
     const struct device *bme680_dev = device_get_binding(BME680_NODE);
     const struct device *si1132_dev = device_get_binding(SI1132_NODE);
 
+    if (bme680_dev == NULL || si1132_dev == NULL) {
+        LOG_ERR("No %s device found", (bme680_dev) ? "Si1132" : "BME680");
+    }
+
     LOG_DBG("Device %p name is %s", bme680_dev, bme680_dev->name);
     LOG_DBG("Device %p name is %s", si1132_dev, si1132_dev->name);
 
+
     while (1) {
-        k_sleep(K_MSEC(ENVIRON_DATA_PERIOD));
+        k_msleep(ENVIRON_DATA_PERIOD);
     
         /* Fetch all sensor channels */
         sensor_sample_fetch(bme680_dev);
