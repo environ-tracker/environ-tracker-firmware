@@ -43,7 +43,7 @@ static void fetch_and_display_lsm(const struct device *dev,
 	sensor_channel_get(dev, SENSOR_CHAN_ACCEL_Y, &data->accel_y);
 	sensor_channel_get(dev, SENSOR_CHAN_ACCEL_Z, &data->accel_z);
 
-	LOG_INF("accel x:%f ms/2 y:%f ms/2 z:%f ms/2", out_ev(&data->accel_x), 
+	LOG_DBG("accel x:%f ms/2 y:%f ms/2 z:%f ms/2", out_ev(&data->accel_x), 
             out_ev(&data->accel_y), out_ev(&data->accel_z));
 
 	/* lsm6dso gyro */
@@ -52,7 +52,7 @@ static void fetch_and_display_lsm(const struct device *dev,
 	sensor_channel_get(dev, SENSOR_CHAN_GYRO_Y, &data->gyro_y);
 	sensor_channel_get(dev, SENSOR_CHAN_GYRO_Z, &data->gyro_z);
 
-	LOG_INF("gyro x:%f dps y:%f dps z:%f dps", out_ev(&data->gyro_x), 
+	LOG_DBG("gyro x:%f dps y:%f dps z:%f dps", out_ev(&data->gyro_x), 
             out_ev(&data->gyro_y), out_ev(&data->gyro_z));
 }
 // TEST
