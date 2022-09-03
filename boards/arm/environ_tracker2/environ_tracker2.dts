@@ -149,7 +149,20 @@ shieldi2c: &i2c0 {
         vin-supply = <&mother_vdd_pwr>;
         spi-max-frequency = <1000000>;
         jedec-id = [c2 23 14];
-        size = <8338608>;
+        size = <8388608>;
+        has-dpd;
+        t-enter-dpd = <30000>;
+        t-exit-dpd = <35000>;
+
+        partitions {
+            compatible = "fixed-partitions";
+            #address-cells = <1>;
+            #size-cells = <1>;    
+            storage_partition: partition@0 {
+                label = "storage";
+                reg = <0x00000000 0x00800000>;
+            };
+        };
     };
 };
 
@@ -166,8 +179,8 @@ shieldi2c: &i2c0 {
             * Storage partition will be used by FCB/LittleFS/NVS
             * if enabled.
             */
-        storage_partition: partition@7a000 {
-            label = "storage";
+        settings_partition: partition@7a000 {
+            label = "settings";
             reg = <0x0007a000 0x00006000>;
         };
     };
