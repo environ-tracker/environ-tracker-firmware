@@ -38,7 +38,7 @@ static int increase_infile_value(char *fname)
 		LOG_ERR("FAIL: read %s: [rd:%d]", log_strdup(fname), rc);
 		goto out;
 	}
-	LOG_PRINTK("%s read count:%u (bytes: %d)\n", fname, boot_count, rc);
+	LOG_INF("%s read count:%u (bytes: %d)\n", fname, boot_count, rc);
 
 	rc = fs_seek(&file, 0, FS_SEEK_SET);
 	if (rc < 0) {
@@ -53,7 +53,7 @@ static int increase_infile_value(char *fname)
 		goto out;
 	}
 
-	LOG_PRINTK("%s write new boot count %u: [wr:%d]\n", fname,
+	LOG_INF("%s write new boot count %u: [wr:%d]\n", fname,
 		   boot_count, rc);
 
  out:
@@ -85,7 +85,7 @@ void accumulator_thread(void *a, void *b, void *c)
         goto out;
     }
 
-    LOG_PRINTK("%s: bsize = %lu ; frsize = %lu ; blocks = %lu ; bfree = %lu\n",
+    LOG_INF("%s: bsize = %lu ; frsize = %lu ; blocks = %lu ; bfree = %lu\n",
 	        mp->mnt_point, sbuf.f_bsize, sbuf.f_frsize, 
             sbuf.f_blocks, sbuf.f_bfree);
 
