@@ -8,4 +8,9 @@ config APP_WIPE_STORAGE
 	help
 	  Use this to force an existing file system to be created.
 
+config APP_INIT_BEACON_FILES
+	bool "Option to initialise the iBeacon supported network files"
+	help
+	  Use this to enbale the initialisation of supported iBeacon network files.
+
 source "Kconfig.zephyr"

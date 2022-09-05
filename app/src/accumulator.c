@@ -124,10 +124,12 @@ void accumulator_thread(void *a, void *b, void *c)
 		goto out;
 	}
 
+	#ifdef APP_CONFIG_BEACON_FILES
 	err = initialise_files(mp);
 	if (err) {
 		goto out;
 	}
+	#endif /* APP_CONFIG_BEACON_FILES */
 
 
     while (1) {
