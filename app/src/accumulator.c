@@ -20,6 +20,32 @@ FS_FSTAB_DECLARE_ENTRY(PARTITION_NODE);
 struct fs_mount_t *mp = &FS_FSTAB_ENTRY(PARTITION_NODE);
 
 
+static int littlefs_flash_erase(unsigned int id)
+{
+	const struct flash_area *pfa;
+	int rc;
+
+	rc = flash_area_open(id, &pfa);
+	if (rc < 0) {
+		LOG_ERR("FAIL: unable to find flash area %u: %d\n",
+			id, rc);
+		return rc;
+	}
+
+	LOG_PRINTK("Area %u at 0x%x on %s for %u bytes\n",
+		   id, (unsigned int)pfa->fa_off, pfa->fa_dev_name,
+		   (unsigned int)pfa->fa_size);
+
+	/* Optional wipe flash contents */
+	if (IS_ENABLED(CONFIG_APP_WIPE_STORAGE)) {
+		rc = flash_area_erase(pfa, 0, pfa->fa_size);
+		LOG_ERR("Erasing flash area ... %d", rc);
+	}
+
+	flash_area_close(pfa);
+	return rc;
+}
+
 static int increase_infile_value(char *fname)
 {
 	uint8_t boot_count = 0;
@@ -76,6 +102,9 @@ void accumulator_thread(void *a, void *b, void *c)
 
     LOG_INF("Accumulator started");
 
+	#ifdef CONFIG_APP_FLASH_ERASE
+	littlefs_flash_erase((uintptr_t)mp->storage_dev);
+	#endif
 
     snprintf(fname, sizeof(fname), "%s/boot_count", mp->mnt_point);
 
