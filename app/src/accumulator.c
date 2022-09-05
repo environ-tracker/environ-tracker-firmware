@@ -5,6 +5,7 @@
 #include <logging/log.h>
 
 #include "environ.h"
+#include "file_helpers.h"
 
 LOG_MODULE_REGISTER(accumulator);
 
@@ -119,6 +120,11 @@ void accumulator_thread(void *a, void *b, void *c)
             sbuf.f_blocks, sbuf.f_bfree);
 
     err = increase_infile_value(fname);
+	if (err) {
+		goto out;
+	}
+
+	err = initialise_files(mp);
 	if (err) {
 		goto out;
 	}

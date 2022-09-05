@@ -4,7 +4,7 @@ set(CONF_FILE
     prj.conf 
     sensors.conf
     shell.conf 
-    # ble.conf
+    ble.conf
 )
 
 set(BOARD environ_tracker2)
@@ -20,5 +20,6 @@ target_sources(app
         src/environ.c 
         src/imu.c 
         src/accumulator.c
+        src/file_helpers.c
         # src/ble_localisation.c
 )
