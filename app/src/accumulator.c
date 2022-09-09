@@ -20,7 +20,7 @@ FS_FSTAB_DECLARE_ENTRY(PARTITION_NODE);
 
 struct fs_mount_t *mp = &FS_FSTAB_ENTRY(PARTITION_NODE);
 
-
+#ifdef CONFIG_APP_FLASH_ERASE
 static int littlefs_flash_erase(unsigned int id)
 {
 	const struct flash_area *pfa;
@@ -46,6 +46,7 @@ static int littlefs_flash_erase(unsigned int id)
 	flash_area_close(pfa);
 	return rc;
 }
+#endif /* CONFIG_APP_FLASH_ERASE */
 
 static int increase_infile_value(char *fname)
 {
