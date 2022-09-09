@@ -132,6 +132,7 @@ void accumulator_thread(void *a, void *b, void *c)
 	}
 	#endif /* APP_CONFIG_BEACON_FILES */
 
+	LOG_ERR("Find beacon return %d", test_searching(0, 1));
 
     while (1) {
 
