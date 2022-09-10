@@ -15,10 +15,14 @@ int initialise_files(struct fs_mount_t *);
 
 int search_directory(struct fs_dir_t *, char *, char *);
 
-int find_network_file(char *);
+int find_network_file(const struct bt_uuid *);
 
 int find_beacon(char *, uint16_t, uint16_t, struct location *);
 
 int test_searching(uint16_t, uint16_t);
+
+int bt_uuid_from_str(char *, struct bt_uuid *);
+
+int is_supported_network(const struct bt_uuid *);
 
 #endif /* FILE_HELPERS_H */
