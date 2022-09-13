@@ -116,7 +116,7 @@ void accumulator_thread(void *a, void *b, void *c)
         goto out;
     }
 
-    LOG_INF("%s: bsize = %lu ; frsize = %lu ; blocks = %lu ; bfree = %lu\n",
+    LOG_DBG("%s: bsize = %lu ; frsize = %lu ; blocks = %lu ; bfree = %lu\n",
 	        mp->mnt_point, sbuf.f_bsize, sbuf.f_frsize, 
             sbuf.f_blocks, sbuf.f_bfree);
 
@@ -138,7 +138,7 @@ void accumulator_thread(void *a, void *b, void *c)
 
         err = k_msgq_get(&environ_data_msgq, &data, K_FOREVER);
         if (err == 0) {
-            LOG_INF("environ data received:\r\n\t"
+            LOG_DBG("environ data received:\r\n\t"
                     "T: %d.%06d; P: %d.%06d; H: %d.%06d; G: %d.%06d; "
                     "L: %d; IR: %d; UV: %d.%06d", data.temp.val1, 
                     data.temp.val2, data.press.val1, data.press.val2, 
