@@ -1,5 +1,5 @@
 menu "Drivers"
 rsource "gpio/Kconfig"
 rsource "sensor/Kconfig"
-rsource "rtc/Kconfig"
+rsource "counter/Kconfig"
 endmenu
