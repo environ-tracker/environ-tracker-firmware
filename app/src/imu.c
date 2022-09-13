@@ -27,6 +27,35 @@ LOG_MODULE_REGISTER(imu);
 
 RING_BUF_ITEM_DECLARE_SIZE(imu_ring_buf, IMU_RINGBUF_SIZE);
 
+// TEST: This code is just to test the device in app
+static inline float out_ev(struct sensor_value *val)
+{
+	return (val->val1 + (float)val->val2 / 1000000);
+}
+
+static void fetch_and_display_lsm(const struct device *dev, 
+        struct imu_data *data)
+{
+
+	/* lsm6dso accel */
+	sensor_sample_fetch_chan(dev, SENSOR_CHAN_ACCEL_XYZ);
+	sensor_channel_get(dev, SENSOR_CHAN_ACCEL_X, &data->accel_x);
+	sensor_channel_get(dev, SENSOR_CHAN_ACCEL_Y, &data->accel_y);
+	sensor_channel_get(dev, SENSOR_CHAN_ACCEL_Z, &data->accel_z);
+
+	LOG_DBG("accel x:%f ms/2 y:%f ms/2 z:%f ms/2", out_ev(&data->accel_x), 
+            out_ev(&data->accel_y), out_ev(&data->accel_z));
+
+	/* lsm6dso gyro */
+	sensor_sample_fetch_chan(dev, SENSOR_CHAN_GYRO_XYZ);
+	sensor_channel_get(dev, SENSOR_CHAN_GYRO_X, &data->gyro_x);
+	sensor_channel_get(dev, SENSOR_CHAN_GYRO_Y, &data->gyro_y);
+	sensor_channel_get(dev, SENSOR_CHAN_GYRO_Z, &data->gyro_z);
+
+	LOG_DBG("gyro x:%f dps y:%f dps z:%f dps", out_ev(&data->gyro_x), 
+            out_ev(&data->gyro_y), out_ev(&data->gyro_z));
+}
+// TEST
 
 
 static void data_trig_handler(const struct device *dev, 
@@ -80,10 +109,10 @@ void imu_thread(void *a, void *b, void *c)
         .chan = SENSOR_CHAN_ACCEL_XYZ | SENSOR_CHAN_GYRO_XYZ
     };
 
-    struct sensor_trigger tap_trig = {
-        .type = SENSOR_TRIG_TAP,
-        .chan = SENSOR_CHAN_ACCEL_XYZ
-    };
+    // struct sensor_trigger tap_trig = {
+    //     .type = SENSOR_TRIG_TAP,
+    //     .chan = SENSOR_CHAN_ACCEL_XYZ
+    // };
 
     struct sensor_value odr_attr = {
         .val1 = IMU_ODR,
@@ -110,31 +139,33 @@ void imu_thread(void *a, void *b, void *c)
         return;
     }
 
-    if (sensor_trigger_set(imu_dev, &data_trig, data_trig_handler) != 0) {
-        LOG_ERR("Coundn't set data ready trigger");
-        return;
-    }
+    // if (sensor_trigger_set(imu_dev, &data_trig, data_trig_handler) != 0) {
+    //     LOG_ERR("Coundn't set data ready trigger");
+    //     return;
+    // }
 
-    if (sensor_trigger_set(imu_dev, &tap_trig, tap_trig_handler) != 0) {
-        LOG_ERR("Coundn't set data ready trigger");
-        return;
-    }
+    // if (sensor_trigger_set(imu_dev, &tap_trig, tap_trig_handler) != 0) {
+    //     LOG_ERR("Coundn't set data ready trigger");
+    //     return;
+    // }
 
-    struct imu_data *data;
+    struct imu_data data;
 
     while (1) {
-        // TODO: process all collected data
+        // // TODO: process all collected data
         
-        // NOTE: Potentially change this to a semaphore given from ISR, where ISR checks ring_buf_size?
-        if ((ring_buf_size_get(&imu_ring_buf) / IMU_DATA_WORD_SIZE) > IMU_ODR) {
-            LOG_ERR("There is enough data items");
-            ring_buf_get_claim(&imu_ring_buf, (uint8_t **)&data, 
-                    IMU_ODR * IMU_DATA_WORD_SIZE);
+        // // NOTE: Potentially change this to a semaphore given from ISR, where ISR checks ring_buf_size?
+        // if ((ring_buf_size_get(&imu_ring_buf) / IMU_DATA_WORD_SIZE) > IMU_ODR) {
+        //     LOG_ERR("There is enough data items");
+        //     ring_buf_get_claim(&imu_ring_buf, (uint8_t **)&data, 
+        //             IMU_ODR * IMU_DATA_WORD_SIZE);
 
-            // TODO: process claimed data
+        //     // TODO: process claimed data
 
-            ring_buf_get_finish(&imu_ring_buf, IMU_ODR * IMU_DATA_WORD_SIZE);
-        } 
+        //     ring_buf_get_finish(&imu_ring_buf, IMU_ODR * IMU_DATA_WORD_SIZE);
+        // } 
+
+        fetch_and_display_lsm(imu_dev, &data);
         
         k_msleep(125);
     }

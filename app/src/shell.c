@@ -8,8 +8,7 @@
 
 LOG_MODULE_REGISTER(app_shell);
 
-static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(
-        DT_ALIAS(led0), gpios);
+static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
 
 static int cmd_led(const struct shell *shell, size_t argc, char **argv)
 {

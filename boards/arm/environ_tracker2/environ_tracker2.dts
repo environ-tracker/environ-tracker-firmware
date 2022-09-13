@@ -42,6 +42,22 @@
         enable-gpios = <&gpio0 19 GPIO_ACTIVE_HIGH>;
         regulator-boot-on;
     };
+
+    fstab {
+        compatible = "zephyr,fstab";
+        lfs: lfs {
+            compatible = "zephyr,fstab,littlefs";
+            mount-point = "/lfs";
+            partition = <&storage_partition>;
+            automount;
+            read-size = <16>;
+            prog-size = <16>;
+            cache-size = <64>;
+            lookahead-size = <32>;
+            block-cycles = <512>;
+            // no-format;
+        };
+    };
 };
 
 &gpiote {
@@ -149,7 +165,20 @@ shieldi2c: &i2c0 {
         vin-supply = <&mother_vdd_pwr>;
         spi-max-frequency = <1000000>;
         jedec-id = [c2 23 14];
-        size = <8338608>;
+        size = <8388608>;
+        has-dpd;
+        t-enter-dpd = <30000>;
+        t-exit-dpd = <35000>;
+
+        partitions {
+            compatible = "fixed-partitions";
+            #address-cells = <1>;
+            #size-cells = <1>;    
+            storage_partition: partition@0 {
+                label = "storage";
+                reg = <0x00000000 0x00100000>;
+            };
+        };
     };
 };
 
@@ -166,8 +195,8 @@ shieldi2c: &i2c0 {
             * Storage partition will be used by FCB/LittleFS/NVS
             * if enabled.
             */
-        storage_partition: partition@7a000 {
-            label = "storage";
+        settings_partition: partition@7a000 {
+            label = "settings";
             reg = <0x0007a000 0x00006000>;
         };
     };
