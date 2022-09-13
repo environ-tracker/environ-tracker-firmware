@@ -152,7 +152,7 @@ static const uint8_t intensity_registers[8] = { 0x16, 0x17, 0x19, 0x1c, 0x20,
 
 
 #ifdef CONFIG_GPIO_SX1508B_INTERRUPT
-static int sx1509b_handle_interrupt(const struct device *dev)
+static int sx1508b_handle_interrupt(const struct device *dev)
 {
 	const struct sx1508b_config *cfg = dev->config;
 	struct sx1508b_drv_data *drv_data = dev->data;
