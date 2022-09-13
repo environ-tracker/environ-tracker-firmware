@@ -1,0 +1,31 @@
+description: RV3028 I2C RTC
+
+compatible: "microcrystal,rv3028"
+
+include: i2c-device.yaml
+
+properties:
+  reg:
+    required: true
+
+  int-gpios:
+    type: phandle-array
+    required: false
+    description: |
+      NOTE: Not implemented
+      Connection for the NINT signal. This signal is used by the RV3028 for 
+      interrupt notification. It is active-low.
+
+  evt-gpios:
+    type: phandle-array
+    required: false
+    description: |
+      NOTE: Not implemented
+      Connection for the EVT signal. Used to supply the RV3028 with events
+
+  clkout-gpios:
+    type: phandle-array
+    required: false
+    description: |
+      NOTE: Not implemented
+      Connection for the CLKOUT signal.
