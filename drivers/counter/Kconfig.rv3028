@@ -1,0 +1,15 @@
+# RV3028 RTC COUNTER configuration options
+
+
+DT_COMPAT_MICROCRYSTAL_RV3028 := microcrystal,rv3028
+
+menuconfig RTC_RV3028
+	bool "RV3028 I2C RTC chip"
+	default $(dt_compat_enabled,$(DT_COMPAT_MICROCRYSTAL_RV3028))
+	depends on I2C
+	help
+	  Enable driver for RV3028 I2C RTC chip.
+
+if RTC_RV3028
+
+endif # RTC_RV3028
