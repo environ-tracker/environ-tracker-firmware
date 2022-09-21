@@ -5,10 +5,8 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/drivers/rtc/rtc_rv3028.h>
-#include <zephyr/posix/time.h>
 #include <zephyr/sys/timeutil.h>
 #include <zephyr/sys/util.h>
-#include <time.h>
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(rv3028, CONFIG_COUNTER_LOG_LEVEL);
@@ -347,7 +345,6 @@ static int rv3028_init(const struct device *dev)
 {
 	struct rv3028_data *data = dev->data;
 	const struct rv3028_config *cfg = dev->config;
-    struct timespec time = {0};
 	int rc = 0;
 	time_t unix_time = 0;
 
@@ -379,11 +376,6 @@ static int rv3028_init(const struct device *dev)
         }
 
         rc = set_day_of_week(dev, &unix_time);
-    
-    } else {
-        time.tv_sec = unix_time;
-        
-        rc = clock_settime(CLOCK_REALTIME, &time);
     }
 
 out:
