@@ -21,5 +21,6 @@ target_sources(app
         src/imu.c 
         src/accumulator.c
         src/file_helpers.c
+        src/sys_init.c
         # src/ble_localisation.c
 )
