@@ -216,6 +216,8 @@ static int si1132_init(const struct device *dev)
         LOG_ERR("i2c bus not ready");
         return -ENODEV;
     }
+    
+    k_msleep(25);
 
     // Write to HW_KEY register as required
     err = i2c_reg_write_byte_dt(bus, SI1132_REG_HW_KEY, 
