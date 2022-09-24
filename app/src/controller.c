@@ -36,7 +36,7 @@ static int init_button(const struct gpio_dt_spec *button,
         return -ENODEV;
     }
 
-    ret = gpio_pin_configure_dt(button, 0);
+    ret = gpio_pin_configure_dt(button, GPIO_INPUT);
     if (ret != 0) {
         LOG_ERR("Failed to configure GPIO on %s pin %d (%d)", 
                 button->port->name, button->pin, ret);
@@ -60,7 +60,7 @@ void controller_thread(void *a, void *b, void *c)
 {
     int ret;
 
-    LOG_WRN("Controller starting");
+    LOG_INF("Controller starting");
 
     ret = init_button(&button0, &button0_cb_data);
     ret |= init_button(&button1, &button1_cb_data);
@@ -68,6 +68,8 @@ void controller_thread(void *a, void *b, void *c)
     if (ret != 0) {
         return;
     }
+
+    LOG_INF("Controller started.");
 }
 
 K_THREAD_DEFINE(controller_id, CONTROLLER_STACK_SIZE, controller_thread, NULL, NULL, NULL, CONTROLLER_PRIORITY, 0, 0);

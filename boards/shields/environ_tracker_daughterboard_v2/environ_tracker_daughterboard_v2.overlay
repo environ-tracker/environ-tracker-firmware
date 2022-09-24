@@ -2,6 +2,8 @@
     aliases {
         led0 = &led0;
         sw0 = &button1;
+        sw1 = &button2;
+        sw2 = &button4;
     };
 
     // NOTE: this may not be the best way to offset the gain
