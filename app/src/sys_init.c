@@ -1,7 +1,7 @@
 #include <zephyr.h>
 #include <device.h>
 #include <posix/time.h>
-#include <counter.h>
+#include <drivers/counter.h>
 
 #include <logging/log_ctrl.h>
 #include <logging/log.h>
