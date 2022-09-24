@@ -54,9 +54,9 @@ int init(const struct device *dev)
 
     LOG_DBG("Realtime clock set to RTC time");
 
-    backend = log_backend_get_by_name("fs");
+    backend = log_backend_get_by_name("log_backend_fs");
     
-    for (int i = 0; i < log_src_cnt_get(CONFIG_LOG_DOMAIN_ID; ++i) {
+    for (int i = 0; i < log_src_cnt_get(CONFIG_LOG_DOMAIN_ID); ++i) {
         set_level = log_filter_set(backend, CONFIG_LOG_DOMAIN_ID, i, 
                 FS_LOG_LEVEL);
 
