@@ -23,7 +23,7 @@ LOG_MODULE_REGISTER(init);
 #endif
 
 
-void init(void)
+int init(const struct device *dev)
 {
     const struct device *rtc_dev = device_get_binding(RTC_NODE);
     struct timespec time = {0};
@@ -35,13 +35,13 @@ void init(void)
 
     if (rtc_dev == NULL) {
         LOG_ERR("No RV3028 RTC device found");
-        return;
+        return -ENODEV;
     }
 
-    rc = counter_get_value(rtc_dev, &unix_time);
+    rc = counter_get_value(rtc_dev, (uint32_t *)&unix_time);
     if (rc < 0) {
         LOG_ERR("Error while getting unix time from RTC (%d).", rc);
-        return;
+        return rc;
     }
 
     time.tv_sec = unix_time;
@@ -49,7 +49,7 @@ void init(void)
     rc = clock_settime(CLOCK_REALTIME, &time);
     if (rc < 0) {
         LOG_ERR("Error while setting realtime clock (%d).", rc);
-        return;
+        return rc;
     }
 
     LOG_DBG("Realtime clock set to RTC time");
@@ -66,6 +66,7 @@ void init(void)
     }
     
     LOG_INF("FS backend set to LOG_LEVEL_WRN");
+    return 0;
 }
 
 SYS_INIT(init, POST_KERNEL, INIT_INIT_PRIORITY);
