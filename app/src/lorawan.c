@@ -4,7 +4,7 @@
 #include <logging/log.h>
 
 
-LOG_MODULE_REGISTER(lorawan_backend);
+LOG_MODULE_REGISTER(lorawan_backend, LOG_LEVEL_WRN);
 
 #define DEFAULT_RADIO_NODE DT_ALIAS(lora0)
 BUILD_ASSERT(DT_NODE_HAS_STATUS(DEFAULT_RADIO_NODE, okay),
