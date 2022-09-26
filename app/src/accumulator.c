@@ -5,7 +5,7 @@
 #include <logging/log.h>
 
 #include "environ.h"
-#include "file_helpers.h"
+#include "file/file_helpers.h"
 
 LOG_MODULE_REGISTER(accumulator);
 

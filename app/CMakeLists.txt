@@ -15,13 +15,14 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(environ_tracker)
 
 include_directories(inc)
+include_directories(inc/file)
 target_sources(app 
     PRIVATE 
         src/shell.c 
         src/environ.c 
         src/imu.c 
         src/accumulator.c
-        src/file_helpers.c
+        src/file/file_helpers.c
         src/sys_init.c
         src/controller.c
         src/lorawan.c
