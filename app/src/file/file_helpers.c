@@ -52,33 +52,7 @@ int find_network_file(const struct bt_uuid *uuid)
 }
 
 
-int bt_uuid_from_str(char *uuid, struct bt_uuid *out)
-{
-    uint8_t buf[BT_UUID_SIZE_128], temp[2];
-    int j = 0, err;
 
-    const int uuid_len = strlen(uuid);
-    if (uuid_len % 2 != 0) {
-        return -EINVAL;
-    }
-
-    for (int i = BT_UUID_SIZE_128 - 1; i >= 0; --i) {
-        for (int k = 0; k < 2; ++k) {
-            if (uuid[j + k] == '-') {
-                j++;
-            }
-
-            err = char2hex(uuid[j + k], &temp[k]);
-            if (err) {
-                return err;
-            }
-        }
-        buf[i] = temp[0] << 4 | temp[1];
-        j += 2;
-    }
-
-    return bt_uuid_create(out, buf, BT_UUID_SIZE_128);
-}
 
 
 int find_beacon(char *fname, uint16_t major, uint16_t minor, 
