@@ -131,8 +131,11 @@ void accumulator_thread(void *a, void *b, void *c)
 		goto out;
 	}
 	#endif /* APP_CONFIG_BEACON_FILES */
+	
+	struct bt_uuid_128 test_uuid;
+	char *test = "7aaf1b67-f3c0-4a54-b314-58fff1960a40";
+	err = bt_uuid_from_str(test, &test_uuid.uuid);
 
-	LOG_ERR("Find beacon return %d", test_searching(0, 1));
 
     while (1) {
 
@@ -148,6 +151,9 @@ void accumulator_thread(void *a, void *b, void *c)
         } else {
             LOG_ERR("environ data receive error: %d", err);
         }
+
+		err = is_supported_network(&test_uuid.uuid);
+		LOG_INF("is_supported_network: %d", err);
     }
 
 out:
