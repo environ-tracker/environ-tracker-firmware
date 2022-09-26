@@ -19,7 +19,7 @@ BUILD_ASSERT(DT_NODE_HAS_STATUS(DEFAULT_RADIO_NODE, okay),
 							0x97, 0x7e, 0x88, 0xd8, 0x7e, 0x04, 0xb8, 0x74}
 
 #define LORAWAN_BACKEND_STACK_SIZE  2048
-#define LORAWAN_BACKEND_PRIORITY    5
+#define LORAWAN_BACKEND_PRIORITY    7
 
 
 char data[] = {'h', 'e', 'l', 'l', 'o', 'w', 'o', 'r', 'l', 'd'};

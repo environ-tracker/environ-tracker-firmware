@@ -17,7 +17,7 @@ LOG_MODULE_REGISTER(imu);
 #endif
 
 #define IMU_STACK_SIZE  500
-#define IMU_PRIORITY    5
+#define IMU_PRIORITY    4
 
 #define IMU_DATA_WORD_SIZE  sizeof(struct imu_data)/sizeof(uint32_t)
 
