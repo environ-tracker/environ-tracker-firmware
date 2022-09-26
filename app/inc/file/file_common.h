@@ -44,7 +44,7 @@ int write_file(char *fname, uint8_t *data, uint32_t len);
 /**
  * @brief Searches for the given file in the directory.
  * 
- * NOTE: Both names must be absolute paths.
+ * NOTE: dir_name is an absolute path, file_name is a relative path.
  * 
  * @param dir_name Directory to search
  * @param file_name File to search for
