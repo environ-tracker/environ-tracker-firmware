@@ -7,10 +7,13 @@ LOG_MODULE_DECLARE(file);
 
 #include "file/file_common.h"
 
-
+#ifdef APP_CONFIG_BEACON_FILES
+#include <bluetooth/uuid.h>
 /* NOTE: This is currently the only supported iBeacon network UUID */
 static const struct bt_uuid_128 supported_beacon_network = BT_UUID_INIT_128(
         BT_UUID_128_ENCODE(0x7aaf1b67, 0xf3c0, 0x4a54, 0xb314, 0x58fff1960a40));
+#endif /* APP_CONFIG_BEACON_FILES */
+
 
 #ifdef CONFIG_APP_FLASH_ERASE
 int storage_flash_erase(unsigned int id)

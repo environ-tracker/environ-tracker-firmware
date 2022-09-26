@@ -38,7 +38,7 @@ bool is_supported_network(const struct bt_uuid *network)
 
 int find_network(const struct bt_uuid *uuid)
 {
-    char network_name[FILE_NAME_LEN], file_name[FILE_NAME_LEN]
+    char network_name[FILE_NAME_LEN], file_name[FILE_NAME_LEN];
     int ret;
 
     bt_uuid_to_str(uuid, network_name, FILE_NAME_LEN);
