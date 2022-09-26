@@ -57,27 +57,27 @@ static int increase_infile_value(char *fname)
 	fs_file_t_init(&file);
 	rc = fs_open(&file, fname, FS_O_CREATE | FS_O_RDWR);
 	if (rc < 0) {
-		LOG_ERR("FAIL: open %s: %d", log_strdup(fname), rc);
+		LOG_ERR("FAIL: open %s: %d", fname, rc);
 		return rc;
 	}
 
 	rc = fs_read(&file, &boot_count, sizeof(boot_count));
 	if (rc < 0) {
-		LOG_ERR("FAIL: read %s: [rd:%d]", log_strdup(fname), rc);
+		LOG_ERR("FAIL: read %s: [rd:%d]", fname, rc);
 		goto out;
 	}
 	LOG_INF("%s read count:%u (bytes: %d)\n", fname, boot_count, rc);
 
 	rc = fs_seek(&file, 0, FS_SEEK_SET);
 	if (rc < 0) {
-		LOG_ERR("FAIL: seek %s: %d", log_strdup(fname), rc);
+		LOG_ERR("FAIL: seek %s: %d", fname, rc);
 		goto out;
 	}
 
 	boot_count += 1;
 	rc = fs_write(&file, &boot_count, sizeof(boot_count));
 	if (rc < 0) {
-		LOG_ERR("FAIL: write %s: %d", log_strdup(fname), rc);
+		LOG_ERR("FAIL: write %s: %d", fname, rc);
 		goto out;
 	}
 
@@ -87,7 +87,7 @@ static int increase_infile_value(char *fname)
  out:
 	ret = fs_close(&file);
 	if (ret < 0) {
-		LOG_ERR("FAIL: close %s: %d", log_strdup(fname), ret);
+		LOG_ERR("FAIL: close %s: %d", fname, ret);
 		return ret;
 	}
 
