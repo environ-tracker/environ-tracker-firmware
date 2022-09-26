@@ -1,137 +1,50 @@
 #include <zephyr.h>
-#include <zephyr/fs/fs.h>
-#include <zephyr/fs/littlefs.h>
-#include <zephyr/storage/flash_map.h>
+// #include <zephyr/fs/fs.h>
+// #include <zephyr/fs/littlefs.h>
+// #include <zephyr/storage/flash_map.h>
 #include <logging/log.h>
 
 #include "environ.h"
 #include "file/file_helpers.h"
+#include "file/file_common.h"
 
 LOG_MODULE_REGISTER(accumulator);
 
 #define ACCUMULATOR_STACK_SIZE  2048
 #define ACCUMULATOR_PRIORITY    6
 
-
+// NOTE: is this required?
 #define MAX_PATH_LEN    255
-#define PARTITION_NODE DT_NODELABEL(lfs)
 
-FS_FSTAB_DECLARE_ENTRY(PARTITION_NODE);
-
-struct fs_mount_t *mp = &FS_FSTAB_ENTRY(PARTITION_NODE);
-
-#ifdef CONFIG_APP_FLASH_ERASE
-static int littlefs_flash_erase(unsigned int id)
-{
-	const struct flash_area *pfa;
-	int rc;
-
-	rc = flash_area_open(id, &pfa);
-	if (rc < 0) {
-		LOG_ERR("FAIL: unable to find flash area %u: %d\n",
-			id, rc);
-		return rc;
-	}
-
-	LOG_PRINTK("Area %u at 0x%x on %s for %u bytes\n",
-		   id, (unsigned int)pfa->fa_off, pfa->fa_dev_name,
-		   (unsigned int)pfa->fa_size);
-
-	/* Optional wipe flash contents */
-	if (IS_ENABLED(CONFIG_APP_WIPE_STORAGE)) {
-		rc = flash_area_erase(pfa, 0, pfa->fa_size);
-		LOG_ERR("Erasing flash area ... %d", rc);
-	}
-
-	flash_area_close(pfa);
-	return rc;
-}
-#endif /* CONFIG_APP_FLASH_ERASE */
-
-static int increase_infile_value(char *fname)
-{
-	uint32_t boot_count = 0;
-	struct fs_file_t file;
-	int rc, ret;
-
-	fs_file_t_init(&file);
-	rc = fs_open(&file, fname, FS_O_CREATE | FS_O_RDWR);
-	if (rc < 0) {
-		LOG_ERR("FAIL: open %s: %d", fname, rc);
-		return rc;
-	}
-
-	rc = fs_read(&file, &boot_count, sizeof(boot_count));
-	if (rc < 0) {
-		LOG_ERR("FAIL: read %s: [rd:%d]", fname, rc);
-		goto out;
-	}
-	LOG_INF("%s read count:%u (bytes: %d)\n", fname, boot_count, rc);
-
-	rc = fs_seek(&file, 0, FS_SEEK_SET);
-	if (rc < 0) {
-		LOG_ERR("FAIL: seek %s: %d", fname, rc);
-		goto out;
-	}
-
-	boot_count += 1;
-	rc = fs_write(&file, &boot_count, sizeof(boot_count));
-	if (rc < 0) {
-		LOG_ERR("FAIL: write %s: %d", fname, rc);
-		goto out;
-	}
-
-	LOG_INF("%s write new boot count %u: [wr:%d]\n", fname,
-		   boot_count, rc);
-
- out:
-	ret = fs_close(&file);
-	if (ret < 0) {
-		LOG_ERR("FAIL: close %s: %d", fname, ret);
-		return ret;
-	}
-
-	return (rc < 0 ? rc : 0);
-}
 
 
 void accumulator_thread(void *a, void *b, void *c)
 {
     struct environ_data data = {0};
-    struct fs_statvfs sbuf;
-    char fname[32];
+    uint32_t boot_count = 0;
+    char fname[FILE_NAME_LEN];
     int err;
 
     LOG_INF("Accumulator started");
 
-	#ifdef CONFIG_APP_FLASH_ERASE
-	littlefs_flash_erase((uintptr_t)mp->storage_dev);
-	#endif
+	absolute_file_name(fname, "boot_count");
 
-    snprintf(fname, sizeof(fname), "%s/boot_count", mp->mnt_point);
-
-    err = fs_statvfs(mp->mnt_point, &sbuf);
-    if (err < 0) {
-        LOG_ERR("statvfs returned %d", err);
-        goto out;
-    }
-
-    LOG_DBG("%s: bsize = %lu ; frsize = %lu ; blocks = %lu ; bfree = %lu\n",
-	        mp->mnt_point, sbuf.f_bsize, sbuf.f_frsize, 
-            sbuf.f_blocks, sbuf.f_bfree);
-
-    err = increase_infile_value(fname);
-	if (err) {
-		goto out;
+	// TODO: move boot_count incrementing to a different place
+	err = read_file(fname, (uint8_t *)&boot_count, sizeof(boot_count));
+	if (err != 0) {
+		boot_count = 0;
+	} else {
+		LOG_INF("boot_count is: %d", boot_count);
+		++boot_count;
 	}
 
-	#ifdef APP_CONFIG_BEACON_FILES
-	err = initialise_files(mp);
-	if (err) {
-		goto out;
+	err = write_file(fname, (uint8_t *)&boot_count, sizeof(boot_count));
+	if (err != 0) {
+		LOG_ERR("something");
 	}
-	#endif /* APP_CONFIG_BEACON_FILES */
-	
+	// TODO: 
+
+
 	struct bt_uuid_128 test_uuid;
 	char *test = "7aaf1b67-f3c0-4a54-b314-58fff1960a40";
 	err = bt_uuid_from_str(test, &test_uuid.uuid);
@@ -155,10 +68,6 @@ void accumulator_thread(void *a, void *b, void *c)
 		err = is_supported_network(&test_uuid.uuid);
 		LOG_INF("is_supported_network: %d", err);
     }
-
-out:
-    err = fs_unmount(mp);
-    LOG_INF("%s unmount: %d", mp->mnt_point, err);
 }
 
 K_THREAD_DEFINE(accumulator_id, ACCUMULATOR_STACK_SIZE, accumulator_thread, NULL, NULL, NULL, ACCUMULATOR_PRIORITY, 0, 0);

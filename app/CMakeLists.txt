@@ -23,6 +23,7 @@ target_sources(app
         src/imu.c 
         src/accumulator.c
         src/file/file_helpers.c
+        src/file/file_common.c
         src/sys_init.c
         src/controller.c
         src/lorawan.c
