@@ -1,21 +1,15 @@
 #include <zephyr.h>
-// #include <zephyr/fs/fs.h>
-// #include <zephyr/fs/littlefs.h>
-// #include <zephyr/storage/flash_map.h>
 #include <logging/log.h>
 
 #include "environ.h"
-#include "file/file_helpers.h"
 #include "file/file_common.h"
+#include "ble/ble_network.h"
+#include "ble/ble_helpers.h"
 
 LOG_MODULE_REGISTER(accumulator);
 
 #define ACCUMULATOR_STACK_SIZE  2048
 #define ACCUMULATOR_PRIORITY    6
-
-// NOTE: is this required?
-#define MAX_PATH_LEN    255
-
 
 
 void accumulator_thread(void *a, void *b, void *c)
@@ -47,7 +41,7 @@ void accumulator_thread(void *a, void *b, void *c)
 
 	struct bt_uuid_128 test_uuid;
 	char *test = "7aaf1b67-f3c0-4a54-b314-58fff1960a40";
-	err = bt_uuid_from_str(test, &test_uuid.uuid);
+	err = bt_uuid_from_str(&test_uuid.uuid, test);
 
 
     while (1) {
