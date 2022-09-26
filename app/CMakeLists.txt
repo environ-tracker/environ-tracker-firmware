@@ -14,16 +14,18 @@ set(SHIELD environ_tracker_daughterboard_v2)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(environ_tracker)
 
-include_directories(inc)
-include_directories(inc/file)
+include_directories(inc inc/file inc/ble)
+
 target_sources(app 
     PRIVATE 
         src/shell.c 
         src/environ.c 
         src/imu.c 
         src/accumulator.c
-        src/file/file_helpers.c
+        src/file/file_init.c
         src/file/file_common.c
+        src/ble/ble_helpers.c
+        src/ble/ble_network.c
         src/sys_init.c
         src/controller.c
         src/lorawan.c
