@@ -4,11 +4,7 @@
 #include <zephyr/fs/fs.h>
 #include <zephyr/bluetooth/uuid.h>
 
-struct location {
-    uint8_t x;
-    uint8_t y;
-    uint8_t z;
-};
+
 
 
 

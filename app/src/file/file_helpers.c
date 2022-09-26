@@ -12,8 +12,7 @@ LOG_MODULE_REGISTER(file_search);
 
 #include "file_helpers.h"
 
-#define BEACON_LINE_SIZE 11
-#define MAX_CACHED_NETWORKS 4
+
 
 extern struct fs_mount_t *mp;
 
@@ -21,118 +20,16 @@ extern struct fs_mount_t *mp;
 
 
 
-int find_network_file(const struct bt_uuid *uuid)
-{
-    struct fs_dir_t dir;
-    char network_name[CONFIG_FILE_SYSTEM_MAX_FILE_NAME];
-    char file_name[CONFIG_FILE_SYSTEM_MAX_FILE_NAME];
-    int ret;
-
-    fs_dir_t_init(&dir);
-
-    bt_uuid_to_str(uuid, network_name,
-             CONFIG_FILE_SYSTEM_MAX_FILE_NAME);
-
-    ret = snprintf(file_name, CONFIG_FILE_SYSTEM_MAX_FILE_NAME, "%s.bin", 
-            network_name);
-    if (ret > CONFIG_FILE_SYSTEM_MAX_FILE_NAME) {
-        LOG_WRN("Filename was truncated, size was: %d", ret);
-        return ret;
-    }
-
-    ret = snprintf(network_name, CONFIG_FILE_SYSTEM_MAX_FILE_NAME, "%s/beacons", 
-            mp->mnt_point);
-    if (ret > CONFIG_FILE_SYSTEM_MAX_FILE_NAME) {
-        LOG_WRN("Filename was truncated, size was: %d", ret);
-        return ret;
-    }
-
-    return search_directory(&dir, network_name, file_name);
-    // return 0;
-}
 
 
 
 
 
-int find_beacon(char *fname, uint16_t major, uint16_t minor, 
-        struct location *beacon_location)
-{
-    struct fs_file_t file;
-    int rc, ret;
-    uint8_t line[BEACON_LINE_SIZE + 1] = {0};
-
-    fs_file_t_init(&file);
-
-    rc = fs_open(&file, fname, FS_O_READ);
-    if (rc == -EEXIST) {
-        LOG_INF("File %s doesn't exist", log_strdup(fname));
-        return rc;
-    } else if (rc < 0) {
-        LOG_ERR("Failed to open file %s, error %d", log_strdup(fname), rc);
-        return rc;
-    }
-    
-    while (1) {
-        rc = fs_read(&file, line, BEACON_LINE_SIZE);
-        if (rc < 0) {
-            LOG_ERR("Failed to read line from %s, error: %d", 
-                    log_strdup(fname), rc);
-            break;
-        } else if (rc != BEACON_LINE_SIZE) {
-            LOG_WRN("Didn't read a whole line, read %d bytes", rc);
-            rc = -ESRCH;
-            break;
-        }
-
-        // TODO: Fix endianess of file
-        if (((uint16_t *)line)[0] == major && 
-                (line[3] | line[2] << 8) == minor) {
-            LOG_WRN("Found beacon, major: %d, minor: %d, x: %d, y: %d, z: %d", 
-                    ((uint16_t *)line)[0], line[3] | line[2] << 8, 
-                    line[5], line[7], line[9]);
-            break;
-        }
-    }
-
-    ret = fs_close(&file);
-    if (ret < 0) {
-        LOG_ERR("Failed to close %s, error %d", log_strdup(fname), ret);
-        return ret;
-    }
-
-    return (rc < 0 ? rc : 0);
-
-}
 
 
-int is_supported_network(const struct bt_uuid *network)
-{
-    static struct bt_uuid network_cache[MAX_CACHED_NETWORKS];
-    static int cached_networks = 0;
 
-    if (cached_networks) {
-        for (int i = 0; i < cached_networks; ++i) {
-            if (bt_uuid_cmp(&network_cache[i], network) == 0) {
-                LOG_INF("Cache hit");
-                return 0;
-            }
-        }
-    }
 
-    if (find_network_file(network) == 0) {
-        if (cached_networks + 1 < MAX_CACHED_NETWORKS) {
-            
-            // TODO: remove magic 16 (aka bytes in 128bit)
-            bt_uuid_create(&network_cache[cached_networks++], BT_UUID_128(network)->val, 16);
-        }
 
-        return 0;
-    }
-
-    return -1;
-    // return 0;
-}
 
 
 int test_searching(uint16_t major, uint16_t minor)
