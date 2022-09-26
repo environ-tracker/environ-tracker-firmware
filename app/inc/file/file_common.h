@@ -40,3 +40,14 @@ int read_file(char *fname, uint8_t *data, uint32_t len);
  * @return 0 on success, or negative error code from FS API
  */
 int write_file(char *fname, uint8_t *data, uint32_t len);
+
+/**
+ * @brief Searches for the given file in the directory.
+ * 
+ * NOTE: Both names must be absolute paths.
+ * 
+ * @param dir_name Directory to search
+ * @param file_name File to search for
+ * @return 0 on success, else negative error code
+ */
+int search_directory(char *dir_name, char *file_name);

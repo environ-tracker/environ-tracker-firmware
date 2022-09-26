@@ -19,54 +19,7 @@ extern struct fs_mount_t *mp;
 
 
 
-int search_directory(struct fs_dir_t *dir, char *dir_name, char *file_name)
-{
-    int err = 0, ret = 0;
 
-    if (strlen(file_name) > CONFIG_FILE_SYSTEM_MAX_FILE_NAME) {
-        return -ENAMETOOLONG;
-    }
-
-    LOG_DBG("dir_name: %s, file_name: %s", dir_name, file_name);
-
-    err = fs_opendir(dir, dir_name);
-    if (err) {
-        LOG_ERR("Error %d while opening dir: %s", err, log_strdup(dir_name));
-        return err;
-    }
-
-    while (1) {
-        // ret = 0;
-        // break;
-        struct fs_dirent entry;        
-
-        err = fs_readdir(dir, &entry);
-        if (err) {
-            LOG_ERR("Error %d while reading dir: %s", err, 
-                    log_strdup(dir_name));
-            break;
-        }
-
-        if (entry.name[0] == '\0') {
-            ret = -ENOENT;
-            break;
-        }
-
-        // TODO: change to strncmp
-        if (entry.type == FS_DIR_ENTRY_FILE && 
-                (strcmp(entry.name, file_name) == 0)) {
-            ret = 0;
-            break;
-        }
-    }
-    
-    err = fs_closedir(dir);
-    if (err) {
-        LOG_ERR("Error %d closing dir: %s", err, log_strdup(dir_name));
-    }
-
-    return (err) ? err : ret;
-}
 
 int find_network_file(const struct bt_uuid *uuid)
 {

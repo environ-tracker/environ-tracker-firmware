@@ -92,3 +92,51 @@ int write_file(char *fname, uint8_t *data, uint32_t len)
 
 	return (rc < 0 ? rc : 0);
 }
+
+int search_directory(char *dir_name, char *file_name)
+{
+    struct fs_dir_t dir;
+    struct fs_dirent entry;
+    int err = 0, ret = 0;
+
+    // TODO: Use strnlen
+    if (strlen(file_name) > FILE_NAME_LEN) {
+        return -ENAMETOOLONG;
+    }
+
+    LOG_DBG("dir_name: %s, file_name: %s", dir_name, file_name);
+
+    fs_dir_t_init(&dir);
+    err = fs_opendir(&dir, dir_name);
+    if (err) {
+        LOG_ERR("Error %d while opening dir: %s", err, dir_name);
+        return err;
+    }
+
+    while (1) {
+        err = fs_readdir(&dir, &entry);
+        if (err) {
+            LOG_ERR("Error %d while reading dir: %s", err, dir_name);
+            break;
+        }
+
+        if (entry.name[0] == '\0') {
+            ret = -ENOENT;
+            break;
+        }
+
+        // TODO: change to strncmp
+        if (entry.type == FS_DIR_ENTRY_FILE && 
+                (strcmp(entry.name, file_name) == 0)) {
+            ret = 0;
+            break;
+        }
+    }
+    
+    err = fs_closedir(&dir);
+    if (err) {
+        LOG_ERR("Error %d closing dir: %s", err, dir_name);
+    }
+
+    return (err) ? err : ret;
+}
