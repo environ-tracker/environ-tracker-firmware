@@ -63,6 +63,7 @@ static void data_trig_handler(const struct device *dev,
     if (ret != 0) {
         // NOTE not enough space, partial copy, shouldn't happen
         LOG_ERR("Partial copy to imu_ring_buf, %d", ret);
+        ring_buf_reset(&imu_ring_buf);
     }
 }
 
@@ -132,9 +133,11 @@ void imu_thread(void *a, void *b, void *c)
             // TODO: process claimed data
 
             ring_buf_get_finish(&imu_ring_buf, IMU_ODR * IMU_DATA_WORD_SIZE);
-        } 
+        } else {
+            k_msleep(20);
+        }
 
-        k_msleep(20);
+        
     }
 }
 
