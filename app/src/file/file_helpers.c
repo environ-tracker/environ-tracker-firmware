@@ -38,7 +38,11 @@ int initialise_files(struct fs_mount_t *mp)
 
     LOG_INF("Initialising files");
 
-    snprintf(fname2, sizeof(fname2), "%s/beacons", mp->mnt_point);
+    ret = snprintf(fname2, sizeof(fname2), "%s/beacons", mp->mnt_point);
+    if (ret > sizeof(fname2)) {
+        LOG_WRN("Truncated filename, size would be: %d", ret);
+        return ret;
+    }
 
     err = fs_mkdir(fname2);
     if (err != 0 && err != -EEXIST) {
@@ -48,7 +52,11 @@ int initialise_files(struct fs_mount_t *mp)
     }
 
     bt_uuid_to_str(&supported_beacon_network.uuid, uuid, 50);
-    snprintf(fname, sizeof(fname), "%s/%s.bin", fname2, uuid);
+    ret = snprintf(fname, sizeof(fname), "%s/%s.bin", fname2, uuid);
+    if (ret > sizeof(fname)) {
+        LOG_WRN("Truncated filename, size would be: %d", ret);
+        return ret; // TODO: change to a better errno
+    }
 
     fs_file_t_init(&file);
     err = fs_open(&file, fname, FS_O_CREATE | FS_O_RDWR);
@@ -96,10 +104,10 @@ int initialise_files(struct fs_mount_t *mp)
     }
 
 out:
-    ret = fs_close(&file);
+    err = fs_close(&file);
     if (err < 0) {
         LOG_ERR("Failed to close file. Error %d", err);
-        return ret;
+        return err;
     }
 
     return (err < 0 ? err : 0);
@@ -109,8 +117,7 @@ int search_directory(struct fs_dir_t *dir, char *dir_name, char *file_name)
 {
     int err = 0, ret = 0;
 
-    if (strnlen(file_name, CONFIG_FILE_SYSTEM_MAX_FILE_NAME + 1) > 
-            CONFIG_FILE_SYSTEM_MAX_FILE_NAME) {
+    if (strlen(file_name) > CONFIG_FILE_SYSTEM_MAX_FILE_NAME) {
         return -ENAMETOOLONG;
     }
 
@@ -123,6 +130,8 @@ int search_directory(struct fs_dir_t *dir, char *dir_name, char *file_name)
     }
 
     while (1) {
+        // ret = 0;
+        // break;
         struct fs_dirent entry;        
 
         err = fs_readdir(dir, &entry);
@@ -137,6 +146,7 @@ int search_directory(struct fs_dir_t *dir, char *dir_name, char *file_name)
             break;
         }
 
+        // TODO: change to strncmp
         if (entry.type == FS_DIR_ENTRY_FILE && 
                 (strcmp(entry.name, file_name) == 0)) {
             ret = 0;
@@ -157,19 +167,29 @@ int find_network_file(const struct bt_uuid *uuid)
     struct fs_dir_t dir;
     char network_name[CONFIG_FILE_SYSTEM_MAX_FILE_NAME];
     char file_name[CONFIG_FILE_SYSTEM_MAX_FILE_NAME];
+    int ret;
 
     fs_dir_t_init(&dir);
 
     bt_uuid_to_str(uuid, network_name,
              CONFIG_FILE_SYSTEM_MAX_FILE_NAME);
 
-    snprintf(file_name, CONFIG_FILE_SYSTEM_MAX_FILE_NAME, "%s.bin", 
+    ret = snprintf(file_name, CONFIG_FILE_SYSTEM_MAX_FILE_NAME, "%s.bin", 
             network_name);
+    if (ret > CONFIG_FILE_SYSTEM_MAX_FILE_NAME) {
+        LOG_WRN("Filename was truncated, size was: %d", ret);
+        return ret;
+    }
 
-    snprintf(network_name, CONFIG_FILE_SYSTEM_MAX_FILE_NAME, "%s/beacons", 
+    ret = snprintf(network_name, CONFIG_FILE_SYSTEM_MAX_FILE_NAME, "%s/beacons", 
             mp->mnt_point);
+    if (ret > CONFIG_FILE_SYSTEM_MAX_FILE_NAME) {
+        LOG_WRN("Filename was truncated, size was: %d", ret);
+        return ret;
+    }
 
     return search_directory(&dir, network_name, file_name);
+    // return 0;
 }
 
 
@@ -178,7 +198,7 @@ int bt_uuid_from_str(char *uuid, struct bt_uuid *out)
     uint8_t buf[BT_UUID_SIZE_128], temp[2];
     int j = 0, err;
 
-    const int uuid_len = strnlen(uuid, CONFIG_FILE_SYSTEM_MAX_FILE_NAME);
+    const int uuid_len = strlen(uuid);
     if (uuid_len % 2 != 0) {
         return -EINVAL;
     }
@@ -255,12 +275,12 @@ int find_beacon(char *fname, uint16_t major, uint16_t minor,
 
 int is_supported_network(const struct bt_uuid *network)
 {
-    static struct bt_uuid_128 network_cache[MAX_CACHED_NETWORKS];
+    static struct bt_uuid network_cache[MAX_CACHED_NETWORKS];
     static int cached_networks = 0;
 
     if (cached_networks) {
         for (int i = 0; i < cached_networks; ++i) {
-            if (bt_uuid_cmp(&network_cache[i].uuid, network) == 0) {
+            if (bt_uuid_cmp(&network_cache[i], network) == 0) {
                 LOG_INF("Cache hit");
                 return 0;
             }
@@ -269,15 +289,16 @@ int is_supported_network(const struct bt_uuid *network)
 
     if (find_network_file(network) == 0) {
         if (cached_networks + 1 < MAX_CACHED_NETWORKS) {
-            memcpy(&network_cache[cached_networks++], BT_UUID_128(network), 
-                    sizeof(struct bt_uuid_128));
-            LOG_INF("Added to cache");
+            
+            // TODO: remove magic 16 (aka bytes in 128bit)
+            bt_uuid_create(&network_cache[cached_networks++], BT_UUID_128(network)->val, 16);
         }
 
         return 0;
     }
 
     return -1;
+    // return 0;
 }
 
 
@@ -297,19 +318,29 @@ int test_searching(uint16_t major, uint16_t minor)
     bt_uuid_to_str(&test_uuid.uuid, network_name,
              CONFIG_FILE_SYSTEM_MAX_FILE_NAME);
 
-    snprintf(file_name, CONFIG_FILE_SYSTEM_MAX_FILE_NAME, 
+    ret = snprintf(file_name, CONFIG_FILE_SYSTEM_MAX_FILE_NAME, 
                 "%s/beacons/%s.bin", mp->mnt_point, network_name);
+    if (ret > CONFIG_FILE_SYSTEM_MAX_FILE_NAME) {
+        LOG_WRN("Filename was truncated, size was: %d", ret);
+        return ret;
+    }
 
     ret = find_network_file(&test_uuid.uuid);
     if (ret == 0) {
         ret = find_beacon(file_name, major, minor, &location);
     }
 
-    LOG_WRN("Testing is_supported_network(): %d", 
-            is_supported_network(&test_uuid.uuid));
+    k_msleep(5);
 
     LOG_WRN("Testing is_supported_network(): %d", 
             is_supported_network(&test_uuid.uuid));
+
+    k_msleep(5);
+
+    LOG_WRN("Testing is_supported_network(): %d", 
+            is_supported_network(&test_uuid.uuid));
+
+    k_msleep(5);
 
     return ret;
 }
