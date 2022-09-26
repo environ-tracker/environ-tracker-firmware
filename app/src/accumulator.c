@@ -50,7 +50,7 @@ static int littlefs_flash_erase(unsigned int id)
 
 static int increase_infile_value(char *fname)
 {
-	uint8_t boot_count = 0;
+	uint32_t boot_count = 0;
 	struct fs_file_t file;
 	int rc, ret;
 
