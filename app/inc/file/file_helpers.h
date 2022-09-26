@@ -11,7 +11,7 @@ struct location {
 };
 
 
-int search_directory(struct fs_dir_t *, char *, char *);
+
 
 int find_network_file(const struct bt_uuid *);
 
