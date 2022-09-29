@@ -1,6 +1,7 @@
 #include <zephyr.h>
 #include <logging/log.h>
 
+#include "accumulator.h"
 #include "environ.h"
 
 
@@ -10,6 +11,11 @@ LOG_MODULE_REGISTER(accumulator);
 #define ACCUMULATOR_STACK_SIZE  2048
 #define ACCUMULATOR_PRIORITY    6
 
+
+// Create the message queue for the LoRaWAN backend
+K_MSGQ_DEFINE(lorawan_msgq, sizeof(struct system_data), 5, 4);
+
+
 /**
  * @brief Thread to accumulate and aggregate all system data to then forward to
  *        LoRaWAN send and OLED display threads as required.
@@ -17,7 +23,9 @@ LOG_MODULE_REGISTER(accumulator);
 void accumulator_thread(void *a, void *b, void *c)
 {
     struct environ_data data = {0};    
+    struct system_data sys_data = {0};
     int err;
+    bool lorawan = true;
 
     LOG_INF("Accumulator started");
 
@@ -36,6 +44,18 @@ void accumulator_thread(void *a, void *b, void *c)
         } else {
             LOG_ERR("environ data receive error: %d", err);
         }
+
+
+        if (lorawan) {
+            sys_data.placeholder = 10;
+
+            // Send to lorawan_thread
+            while (k_msgq_put(&lorawan_msgq, &sys_data, K_MSEC(2)) != 0) {
+                k_msgq_purge(&lorawan_msgq);
+                LOG_DBG("lorawan_msgq has been purged");
+            }
+        }
+
     }
 }
 

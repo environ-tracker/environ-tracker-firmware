@@ -3,6 +3,8 @@
 #include <zephyr.h>
 #include <logging/log.h>
 
+#include "accumulator.h"
+
 
 LOG_MODULE_REGISTER(lorawan_backend, LOG_LEVEL_INF);
 
@@ -21,8 +23,6 @@ BUILD_ASSERT(DT_NODE_HAS_STATUS(DEFAULT_RADIO_NODE, okay),
 #define LORAWAN_BACKEND_STACK_SIZE  2048
 #define LORAWAN_BACKEND_PRIORITY    7
 
-
-char data[] = {'h', 'e', 'l', 'l', 'o', 'w', 'o', 'r', 'l', 'd'};
 
 static void dl_callback(uint8_t port, bool data_pending,
             int16_t rssi, int8_t snr,
@@ -47,6 +47,8 @@ void lorawan_backend(void *a, void *b, void *c)
     uint8_t join_eui[] = LORAWAN_JOIN_EUI;
     uint8_t app_key[] = LORAWAN_APP_KEY;
     int ret;
+
+    struct system_data sys_data = {0};
 
     struct lorawan_downlink_cb downlink_cb = {
         .port = LW_RECV_PORT_ANY,
@@ -82,26 +84,34 @@ void lorawan_backend(void *a, void *b, void *c)
 
     LOG_INF("Sending data...");
     while (1) {
-        ret = lorawan_send(2, data, sizeof(data), LORAWAN_MSG_CONFIRMED);
+        ret = k_msgq_get(&lorawan_msgq, &sys_data, K_FOREVER);
+        if (ret == 0) {
+            LOG_INF("sys_data received, sending");
 
-        /*
-         * Note: The stack may return -EAGAIN if the provided data
-         * length exceeds the maximum possible one for the region and
-         * datarate. But since we are just sending the same data here,
-         * we'll just continue.
-         */
-        if (ret == -EAGAIN) {
-            LOG_ERR("lorawan_send failed: %d. Continuing...", ret);
-            k_sleep(K_MSEC(10000));
-            continue;
+            ret = lorawan_send(2, (uint8_t *)&sys_data, sizeof(sys_data), 
+                    LORAWAN_MSG_CONFIRMED);
+
+            /*
+             * Note: The stack may return -EAGAIN if the provided data
+             * length exceeds the maximum possible one for the region and
+             * datarate. But since we are just sending the same data here,
+             * we'll just continue.
+             */
+            if (ret == -EAGAIN) {
+                LOG_ERR("lorawan_send failed: %d. Continuing...", ret);
+                k_sleep(K_MSEC(10000));
+                continue;
+            } else if (ret < 0) {
+                LOG_ERR("lorawan_send failed: %d", ret);
+                k_msleep(5000);
+                continue;
+            }
+
+            LOG_INF("Data sent!");
+        } else {
+            LOG_ERR("message queue receive error: %d", ret);
         }
-
-        if (ret < 0) {
-            LOG_ERR("lorawan_send failed: %d", ret);
-            return;
-        }
-
-        LOG_INF("Data sent!");
+    
         k_sleep(K_MSEC(10000));
     }
 }
