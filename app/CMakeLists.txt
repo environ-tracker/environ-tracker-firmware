@@ -30,4 +30,5 @@ target_sources(app
         src/controller.c
         src/lorawan.c
         # src/ble_localisation.c
+        tests/ble_tests.c
 )
