@@ -16,15 +16,15 @@ void accumulator_thread(void *a, void *b, void *c)
 {
     struct environ_data data = {0};
     uint32_t boot_count = 0;
-    char fname[FILE_NAME_LEN];
+    
     int err;
 
     LOG_INF("Accumulator started");
 
-	absolute_file_name(fname, "boot_count");
+	// absolute_file_name(fname, "boot_count");
 
 	// TODO: move boot_count incrementing to a different place
-	err = read_file(fname, (uint8_t *)&boot_count, sizeof(boot_count));
+	err = read_file("boot_count", (uint8_t *)&boot_count, sizeof(boot_count));
 	if (err != 0) {
 		boot_count = 0;
 	} else {
@@ -32,16 +32,11 @@ void accumulator_thread(void *a, void *b, void *c)
 		++boot_count;
 	}
 
-	err = write_file(fname, (uint8_t *)&boot_count, sizeof(boot_count));
+	err = write_file("boot_count", (uint8_t *)&boot_count, sizeof(boot_count));
 	if (err != 0) {
 		LOG_ERR("something");
 	}
 	// TODO: 
-
-
-	struct bt_uuid_128 test_uuid;
-	char *test = "7aaf1b67-f3c0-4a54-b314-58fff1960a40";
-	err = bt_uuid_from_str(&test_uuid.uuid, test);
 
 
     while (1) {
@@ -58,9 +53,6 @@ void accumulator_thread(void *a, void *b, void *c)
         } else {
             LOG_ERR("environ data receive error: %d", err);
         }
-
-		err = is_supported_network(&test_uuid.uuid);
-		LOG_INF("is_supported_network: %d", err);
     }
 }
 
