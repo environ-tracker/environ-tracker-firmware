@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <bluetooth/uuid.h>
 #include <fs/fs.h>
 
@@ -38,71 +39,29 @@ bool is_supported_network(const struct bt_uuid *network)
 
 int find_network(const struct bt_uuid *uuid)
 {
-    char network_name[FILE_NAME_LEN], file_name[FILE_NAME_LEN];
-    int ret;
+    char network_name[FILE_NAME_LEN];
 
     bt_uuid_to_str(uuid, network_name, FILE_NAME_LEN);
 
-    ret = snprintf(file_name, FILE_NAME_LEN, "%s.bin", network_name);
-    if (ret >= FILE_NAME_LEN) {
-        LOG_ERR("find_network: File name was truncated, size was: %d", ret);
-        return ret;
-    }
+    return search_directory("beacons", network_name);
+}
 
-    ret = absolute_file_name(network_name, "beacons");
+int find_beacon(struct ibeacon *beacon)
+{
+    char network_file[FILE_NAME_LEN];
+    int ret, position;
+
+    strcpy(network_file, "beacons/");
+    position = strlen(network_file);
+    
+    bt_uuid_to_str(&beacon->network_uuid.uuid, &network_file[position], 
+            FILE_NAME_LEN - position);
+
+    ret = search_file(network_file, (uint8_t *)&beacon->id, sizeof(beacon->id), 
+            0, (uint8_t *)&beacon->id, 16);
     if (ret != 0) {
         return ret;
     }
 
-    return search_directory(network_name, file_name);
-}
-
-
-// TODO refactor this function. Clean up function params and code inside
-int find_beacon(char *fname, uint16_t major, uint16_t minor, 
-        struct location *beacon_location)
-{
-    struct fs_file_t file;
-    uint8_t line[BEACON_LINE_SIZE + 1] = {0};
-    int rc, ret;
-
-    fs_file_t_init(&file);
-    rc = fs_open(&file, fname, FS_O_READ);
-    if (rc == -EEXIST) {
-        LOG_INF("find_beacon: File %s doesn't exist", fname);
-        return rc;
-    } else if (rc < 0) {
-        LOG_ERR("find_beacon: Failed opening %s. (%d)", fname, rc);
-        return rc;
-    }
-    
-    while (1) {
-        rc = fs_read(&file, line, BEACON_LINE_SIZE);
-        if (rc < 0) {
-            LOG_ERR("find_beacon: Failed reading line from %s. (%d)", 
-                    fname, rc);
-            break;
-        } else if (rc != BEACON_LINE_SIZE) {
-            LOG_WRN("find_beacon: Partial read of %d bytes", rc);
-            rc = -ESRCH;
-            break;
-        }
-
-        // TODO: Fix endianess of file
-        if (((uint16_t *)line)[0] == major && 
-                (line[3] | line[2] << 8) == minor) {
-            LOG_WRN("Found beacon, major: %d, minor: %d, x: %d, y: %d, z: %d", 
-                    ((uint16_t *)line)[0], line[3] | line[2] << 8, 
-                    line[5], line[7], line[9]);
-            break;
-        }
-    }
-
-    ret = fs_close(&file);
-    if (ret < 0) {
-        LOG_ERR("find_beacon: Failed to close %s. (%d)", fname, ret);
-        return ret;
-    }
-
-    return (rc < 0 ? rc : 0);
+    return 0;
 }
