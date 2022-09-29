@@ -19,7 +19,7 @@ LOG_MODULE_REGISTER(controller);
 int increment_boot_count(void)
 {
     uint32_t boot_count = 0;
-    int err    
+    int err;
 
     err = read_file("boot_count", (uint8_t *)&boot_count, sizeof(boot_count));
 	if (err == -EEXIST) {
