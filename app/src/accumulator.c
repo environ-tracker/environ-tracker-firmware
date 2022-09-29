@@ -2,41 +2,24 @@
 #include <logging/log.h>
 
 #include "environ.h"
-#include "file/file_common.h"
-#include "ble/ble_network.h"
-#include "ble/ble_helpers.h"
+
 
 LOG_MODULE_REGISTER(accumulator);
+
 
 #define ACCUMULATOR_STACK_SIZE  2048
 #define ACCUMULATOR_PRIORITY    6
 
-
+/**
+ * @brief Thread to accumulate and aggregate all system data to then forward to
+ *        LoRaWAN send and OLED display threads as required.
+ */
 void accumulator_thread(void *a, void *b, void *c)
 {
-    struct environ_data data = {0};
-    uint32_t boot_count = 0;
-    
+    struct environ_data data = {0};    
     int err;
 
     LOG_INF("Accumulator started");
-
-	// absolute_file_name(fname, "boot_count");
-
-	// TODO: move boot_count incrementing to a different place
-	err = read_file("boot_count", (uint8_t *)&boot_count, sizeof(boot_count));
-	if (err != 0) {
-		boot_count = 0;
-	} else {
-		LOG_INF("boot_count is: %d", boot_count);
-		++boot_count;
-	}
-
-	err = write_file("boot_count", (uint8_t *)&boot_count, sizeof(boot_count));
-	if (err != 0) {
-		LOG_ERR("something");
-	}
-	// TODO: 
 
 
     while (1) {
