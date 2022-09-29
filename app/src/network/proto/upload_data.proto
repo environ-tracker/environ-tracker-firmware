@@ -1,0 +1,31 @@
+synatx = "proto3";
+
+enum Activity {
+    ACTIVITY_UNDEFINED = 0
+    ACTIVITY_STAND = 1;
+    ACTIVITY_WALK = 2;
+    ACTIVITY_RUN = 3;
+    ACTIVITY_JUMP = 4;
+}
+
+message Location {
+    uint32 latitude;
+    uint32 longitude;
+    uint32 altitude;
+}
+
+message EnvironData {
+    float ambient_temp;
+    float pressure;
+    float humidity;
+    float tvoc;
+    uint32 uv_index;
+}
+
+message EnvironTrackerUpload {
+    uint32 timestamp;
+    EnvironData environ_data;
+    Activity activity;
+    Location location;
+}
+
