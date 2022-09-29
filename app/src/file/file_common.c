@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <fs/fs.h>
 #include <zephyr/fs/littlefs.h>
 
@@ -27,13 +28,37 @@ int absolute_file_name(char *path, char *fname)
     return 0;
 }
 
+int delete_file(char *fname)
+{
+    char abs_fname[FILE_NAME_LEN];
+    int rc;
+
+    rc = absolute_file_name(abs_fname, fname);
+    if (rc) {
+        return rc;
+    }
+
+    rc = fs_unlink(abs_fname);
+    if (rc) {
+        LOG_ERR("delete_file: failed to delete %s. (%d)", fname, rc);    
+    }
+
+    return rc;
+}
+
 int read_file(char *fname, uint8_t *data, uint32_t len)
 {
     struct fs_file_t file;
+    char abs_fname[FILE_NAME_LEN];
     int rc, ret;
 
+    rc = absolute_file_name(abs_fname, fname);
+    if (rc) {
+        return rc;
+    }
+
     fs_file_t_init(&file);
-	rc = fs_open(&file, fname, FS_O_READ);
+	rc = fs_open(&file, abs_fname, FS_O_READ);
 	if (rc < 0) {
 		LOG_ERR("FAIL: open %s: %d", fname, rc);
 		return rc;
@@ -60,10 +85,16 @@ out:
 int write_file(char *fname, uint8_t *data, uint32_t len)
 {
     struct fs_file_t file;
+    char abs_fname[FILE_NAME_LEN];
     int rc, ret;
 
+    rc = absolute_file_name(abs_fname, fname);
+    if (rc) {
+        return rc;
+    }
+
     fs_file_t_init(&file);
-	rc = fs_open(&file, fname, FS_O_CREATE | FS_O_WRITE);
+	rc = fs_open(&file, abs_fname, FS_O_CREATE | FS_O_WRITE);
 	if (rc < 0) {
 		LOG_ERR("FAIL: open %s: %d", fname, rc);
 		return rc;
@@ -97,6 +128,7 @@ int search_directory(char *dir_name, char *file_name)
 {
     struct fs_dir_t dir;
     struct fs_dirent entry;
+    char dir_path[FILE_NAME_LEN];
     int err = 0, ret = 0;
 
     // TODO: Use strnlen
@@ -104,10 +136,15 @@ int search_directory(char *dir_name, char *file_name)
         return -ENAMETOOLONG;
     }
 
+    err = absolute_file_name(dir_path, dir_name);
+    if (err) {
+        return err;
+    }
+
     LOG_DBG("dir_name: %s, file_name: %s", dir_name, file_name);
 
     fs_dir_t_init(&dir);
-    err = fs_opendir(&dir, dir_name);
+    err = fs_opendir(&dir, dir_path);
     if (err) {
         LOG_ERR("Error %d while opening dir: %s", err, dir_name);
         return err;
@@ -139,4 +176,56 @@ int search_directory(char *dir_name, char *file_name)
     }
 
     return (err) ? err : ret;
+}
+
+int search_file(char *fname, uint8_t *data, uint32_t len, uint32_t offset,
+        uint8_t *block, uint32_t block_len)
+{
+    struct fs_file_t file;
+    uint8_t line[block_len];
+    char abs_fname[FILE_NAME_LEN];
+    int rc, ret;
+
+    rc = absolute_file_name(abs_fname, fname);
+    if (rc) {
+        return rc;
+    }
+
+    fs_file_t_init(&file);
+    rc = fs_open(&file, abs_fname, FS_O_READ);
+    if (rc == -EEXIST) {
+        LOG_WRN("search_file: File %s doesn't exist", fname);
+        return rc;
+    } else if (rc < 0) {
+        LOG_ERR("search_file: Failed opening %s. (%d)", fname, rc);
+        return rc;
+    }
+
+    while (1) {
+        rc = fs_read(&file, line, block_len);
+        if (rc < 0) {
+            LOG_ERR("search_file: Failed reading line from %s. (%d)", 
+                    fname, rc);
+            break;
+        } else if (rc != block_len) {
+            LOG_INF("search_file: Partial read of %d bytes from %s", rc, fname);
+            rc = -ESRCH;
+            break;
+        }
+
+        if (memcmp(line, data, len) == 0) {
+            // data was found in the file
+            LOG_HEXDUMP_INF(data, len, "was found in file");
+            memcpy(block, line, block_len);
+            break;
+        }
+    }
+
+    ret = fs_close(&file);
+    if (ret < 0) {
+        LOG_ERR("search_file: Failed to close %s. (%d)", fname, ret);
+        return ret;
+    }
+
+    return (rc < 0 ? rc : 0);
 }
