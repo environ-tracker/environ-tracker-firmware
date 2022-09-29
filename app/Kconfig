@@ -13,4 +13,10 @@ config APP_INIT_BEACON_FILES
 	help
 	  Use this to enbale the initialisation of supported iBeacon network files.
 
+config APP_FS_BACKEND_LOG_FILTER_LEVEL
+	int "Option to set FS backend filter level"
+	default 2
+	help
+	  Use this to set the filtering level of the FS logging backend.
+
 source "Kconfig.zephyr"
