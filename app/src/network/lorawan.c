@@ -3,10 +3,9 @@
 #include <zephyr.h>
 #include <logging/log.h>
 
-// #include <pb_encode.h>
-// #include "src/network/proto/upload_data.pb.h"
-
 #include "accumulator.h"
+#include "encode_pb.h"
+#include "src/network/proto/upload_data.pb.h"
 
 
 LOG_MODULE_REGISTER(lorawan_backend, LOG_LEVEL_INF);
@@ -49,7 +48,9 @@ void lorawan_backend(void *a, void *b, void *c)
     uint8_t dev_eui[] = LORAWAN_DEV_EUI;
     uint8_t join_eui[] = LORAWAN_JOIN_EUI;
     uint8_t app_key[] = LORAWAN_APP_KEY;
+    uint8_t tx_buffer[SimpleMessage_size];
     int ret;
+    size_t data_len;
 
     struct system_data sys_data = {0};
 
@@ -89,9 +90,17 @@ void lorawan_backend(void *a, void *b, void *c)
     while (1) {
         ret = k_msgq_get(&lorawan_msgq, &sys_data, K_FOREVER);
         if (ret == 0) {
-            LOG_INF("sys_data received, sending");
+            LOG_INF("sys_data received, timestamp: %d", sys_data.timestamp);
 
-            ret = lorawan_send(2, (uint8_t *)&sys_data, sizeof(sys_data), 
+            if (!encode_message(tx_buffer, SimpleMessage_size, &data_len, 
+                    &sys_data)) {
+                k_msleep(5000); 
+                continue;    
+            } 
+
+            LOG_INF("data encoded successfully, using %d bytes, sending...", 
+                    data_len);
+            ret = lorawan_send(2, tx_buffer, data_len, 
                     LORAWAN_MSG_CONFIRMED);
 
             /*

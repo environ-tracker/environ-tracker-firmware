@@ -3,6 +3,14 @@
 
 #include <drivers/sensor.h>
 
+enum activity {
+    ACTIVITY_UNDEFINED = 0,
+    ACTIVITY_STAND,
+    ACTIVITY_WALK,
+    ACTIVITY_RUN,
+    ACTIVITY_JUMP
+};
+
 struct imu_data {
     struct sensor_value accel_x;
     struct sensor_value accel_y;
