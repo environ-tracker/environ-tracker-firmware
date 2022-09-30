@@ -20,6 +20,14 @@ cd my-workspace
 west update
 ```
 
+Secondly nanopb and its dependencies needs to be installed. This can be done by running:
+```shell
+# install protoc
+sudo apt install protobuf-compiler
+```
+
+Note that ``protoc`` must be version 3.19.0 or higher.
+
 ### Build & Run
 
 The application can be built by running:

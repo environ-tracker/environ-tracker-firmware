@@ -3,6 +3,9 @@
 #include <zephyr.h>
 #include <logging/log.h>
 
+// #include <pb_encode.h>
+// #include "src/network/proto/upload_data.pb.h"
+
 #include "accumulator.h"
 
 

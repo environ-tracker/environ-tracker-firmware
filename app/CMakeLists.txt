@@ -14,11 +14,21 @@ set(SHIELD environ_tracker_daughterboard_v2)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(environ_tracker)
 
+# list(APPEND CMAKE_MODULE_PATH /home/aaron/ExtraDrive/University/Thesis/code/modules/lib/nanopb/extra/
+# )
+
+set(NANOPB_OPTIONS "-I${CMAKE_SOURCE_DIR}")
+nanopb_generate_cpp(proto_sources proto_headers RELPATH .
+    src/network/proto/upload_data.proto
+)
+
+zephyr_library_include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(inc inc/file inc/ble)
 
 
 target_sources(app 
     PRIVATE 
+        ${proto_sources}
         src/shell.c 
         src/environ.c 
         src/imu.c 
