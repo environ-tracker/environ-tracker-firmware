@@ -1,4 +1,5 @@
 #include <zephyr.h>
+#include <posix/time.h>
 #include <logging/log.h>
 
 #include "accumulator.h"
@@ -24,6 +25,7 @@ void accumulator_thread(void *a, void *b, void *c)
 {
     struct environ_data data = {0};    
     struct system_data sys_data = {0};
+    struct timespec time = {0};
     int err;
     bool lorawan = true;
 
@@ -46,8 +48,10 @@ void accumulator_thread(void *a, void *b, void *c)
         }
 
 
+        clock_gettime(CLOCK_REALTIME, &time);
+
         if (lorawan) {
-            sys_data.placeholder = 10;
+            sys_data.timestamp = time.tv_sec;
 
             // Send to lorawan_thread
             while (k_msgq_put(&lorawan_msgq, &sys_data, K_MSEC(2)) != 0) {
