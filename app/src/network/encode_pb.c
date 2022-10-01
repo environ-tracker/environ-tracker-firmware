@@ -12,10 +12,6 @@ LOG_MODULE_DECLARE(lorawan_backend);
 bool encode_message(uint8_t *buffer, size_t buffer_size, size_t *message_len, 
         struct system_data *data)
 {
-    bool status;
-
-
-    // EnvironTrackerUpload message = EnvironTrackerUpload_init_zero;
     EnvironTrackerUpload message = EnvironTrackerUpload_init_zero;
 
     pb_ostream_t stream = pb_ostream_from_buffer(buffer, buffer_size);
@@ -35,7 +31,7 @@ bool encode_message(uint8_t *buffer, size_t buffer_size, size_t *message_len,
     message.environ.pressure = data->environ.press.val1;
 
 
-    status = pb_encode(&stream, EnvironTrackerUpload_fields, &message);
+    bool status = pb_encode(&stream, EnvironTrackerUpload_fields, &message);
     *message_len = stream.bytes_written;
 
     if (!status) {
