@@ -15,17 +15,15 @@ message Location {
 }
 
 message EnvironData {
-    float ambient_temp = 1;
-    float pressure = 2;
-    float humidity = 3;
-    float tvoc = 4;
+    int32 ambient_temp = 1;
+    uint32 pressure = 2;
+    uint32 humidity = 3;
+    uint32 tvoc = 4;
     uint32 uv_index = 5;
 }
 
 message EnvironTrackerUpload {
-    uint32 timestamp = 1;
-    EnvironData environ_data = 2;
-    Activity activity = 3;
-    Location location = 4;
+    Location location = 1;
+    Activity activity = 2;
+    EnvironData environ = 3; 
 }
-

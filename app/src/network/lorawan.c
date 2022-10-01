@@ -48,7 +48,7 @@ void lorawan_backend(void *a, void *b, void *c)
     uint8_t dev_eui[] = LORAWAN_DEV_EUI;
     uint8_t join_eui[] = LORAWAN_JOIN_EUI;
     uint8_t app_key[] = LORAWAN_APP_KEY;
-    uint8_t tx_buffer[SimpleMessage_size];
+    uint8_t tx_buffer[EnvironTrackerUpload_size];
     int ret;
     size_t data_len;
 
@@ -71,6 +71,8 @@ void lorawan_backend(void *a, void *b, void *c)
         return;
     }
 
+    lorawan_set_datarate(LORAWAN_DR_3);
+
     lorawan_register_downlink_callback(&downlink_cb);
 
     join_cfg.mode = LORAWAN_ACT_OTAA;
@@ -92,7 +94,7 @@ void lorawan_backend(void *a, void *b, void *c)
         if (ret == 0) {
             LOG_INF("sys_data received, timestamp: %d", sys_data.timestamp);
 
-            if (!encode_message(tx_buffer, SimpleMessage_size, &data_len, 
+            if (!encode_message(tx_buffer, sizeof(tx_buffer), &data_len, 
                     &sys_data)) {
                 k_msleep(5000); 
                 continue;    
