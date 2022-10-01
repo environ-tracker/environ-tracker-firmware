@@ -4,6 +4,7 @@
 #include <logging/log.h>
 
 #include "environ.h"
+#include "accumulator.h"
 
 LOG_MODULE_REGISTER(environ_fetch);
 
@@ -81,6 +82,7 @@ void environ_fetch_thread(void *a, void *b, void *c)
             LOG_DBG("environ_data_msgq has been purged");
         }
 
+        k_event_post(&data_events, ENVIRON_DATA_PENDING);
     }
 }
 

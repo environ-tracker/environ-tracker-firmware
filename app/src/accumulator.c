@@ -16,6 +16,9 @@ LOG_MODULE_REGISTER(accumulator);
 // Create the message queue for the LoRaWAN backend
 K_MSGQ_DEFINE(lorawan_msgq, sizeof(struct system_data), 5, 4);
 
+/* Input data pending event group */
+K_EVENT_DEFINE(data_events);
+
 
 /**
  * @brief Thread to accumulate and aggregate all system data to then forward to
@@ -33,18 +36,19 @@ void accumulator_thread(void *a, void *b, void *c)
 
 
     while (1) {
+        /* Wait for all data to be ready */
+        // k_event_wait_all(&data_events, ENVIRON_DATA_PENDING | 
+        //         ACTIVITY_DATA_PENDING | LOCATION_DATA_PENDING, true, 
+        //         K_FOREVER);
 
-        err = k_msgq_get(&environ_data_msgq, &data, K_FOREVER);
-        if (err == 0) {
-            LOG_DBG("environ data received:\r\n\t"
-                    "T: %d.%06d; P: %d.%06d; H: %d.%06d; G: %d.%06d; "
-                    "L: %d; IR: %d; UV: %d.%06d", data.temp.val1, 
-                    data.temp.val2, data.press.val1, data.press.val2, 
-                    data.humidity.val1, data.humidity.val2, data.gas_res.val1, 
-                    data.gas_res.val2, data.vis_light.val1, data.ir_light.val1,
-                    data.uv_index.val1, data.uv_index.val2);
-        } else {
+        k_event_wait(&data_events, ENVIRON_DATA_PENDING | 
+                ACTIVITY_DATA_PENDING | LOCATION_DATA_PENDING, true, 
+                K_FOREVER);
+
+        err = k_msgq_get(&environ_data_msgq, &data, K_NO_WAIT);
+        if (err != 0) {
             LOG_ERR("environ data receive error: %d", err);
+            continue;
         }
 
 
@@ -52,6 +56,11 @@ void accumulator_thread(void *a, void *b, void *c)
 
         if (lorawan) {
             sys_data.timestamp = time.tv_sec;
+            sys_data.activity = ACTIVITY_UNDEFINED;
+            sys_data.environ = data;
+            sys_data.location.longitude = 102031;
+            sys_data.location.latitude = 102031;
+            sys_data.location.altitude = 102031;
 
             // Send to lorawan_thread
             while (k_msgq_put(&lorawan_msgq, &sys_data, K_MSEC(2)) != 0) {
