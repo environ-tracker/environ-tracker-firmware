@@ -8,12 +8,6 @@
 
 LOG_MODULE_DECLARE(lorawan_backend);
 
-// static inline void save_sensor_val(SensorVal *buf, struct sensor_value *val)
-// {
-//     buf->val1 = val->val1;
-//     buf->val2 = val->val2;
-// }
-
 
 bool encode_message(uint8_t *buffer, size_t buffer_size, size_t *message_len, 
         struct system_data *data)
