@@ -38,57 +38,71 @@ static void dl_callback(uint8_t port, bool data_pending,
 
 /**
  * @brief Fetches all required data and then sends it to the network
- * 
- * NOTE: Currently this just sends "helloworld" to the network every 10s
  */
 void lorawan_backend(void *a, void *b, void *c)
 {
-    const struct device *lora_dev;
-    struct lorawan_join_config join_cfg;
+    /* Buffers for LoRaWAN keys */
     uint8_t dev_eui[] = LORAWAN_DEV_EUI;
     uint8_t join_eui[] = LORAWAN_JOIN_EUI;
     uint8_t app_key[] = LORAWAN_APP_KEY;
+
+
     uint8_t tx_buffer[EnvironTrackerUpload_size];
     int ret;
     size_t data_len;
 
     struct system_data sys_data = {0};
 
-    struct lorawan_downlink_cb downlink_cb = {
-        .port = LW_RECV_PORT_ANY,
-        .cb = dl_callback
-    };
-
-    lora_dev = device_get_binding(DEFAULT_RADIO);
+    
+    /* Get device pointer for LoRa transceiver */
+    const struct device *lora_dev = device_get_binding(DEFAULT_RADIO);
     if (!lora_dev) {
         LOG_ERR("%s Device not found", DEFAULT_RADIO);
         return;
     }
 
+    /* Start LoRaWAN stack */
     ret = lorawan_start();
     if (ret < 0) {
         LOG_ERR("lorawan_start failed: %d", ret);
         return;
     }
 
-    lorawan_set_datarate(LORAWAN_DR_3);
-
-    lorawan_register_downlink_callback(&downlink_cb);
-
-    join_cfg.mode = LORAWAN_ACT_OTAA;
-    join_cfg.dev_eui = dev_eui;
-    join_cfg.otaa.join_eui = join_eui;
-    join_cfg.otaa.app_key = app_key;
-    join_cfg.otaa.nwk_key = app_key;
-
-    LOG_INF("Joining network over OTAA");
-    ret = lorawan_join(&join_cfg);
+    /* Set LoRaWAN to DR3, allowing ~53 payload bytes */
+    ret = lorawan_set_datarate(LORAWAN_DR_3);
     if (ret < 0) {
-        LOG_ERR("lorawan_join_network failed: %d", ret);
+        LOG_ERR("lorawan_set_datarate failed: %d", ret);
         return;
     }
 
-    LOG_INF("Sending data...");
+    /* Setup and register callback for downlink messages */
+    struct lorawan_downlink_cb downlink_cb = {
+        .port = LW_RECV_PORT_ANY,
+        .cb = dl_callback
+    };
+
+    lorawan_register_downlink_callback(&downlink_cb);
+
+    /* Setup LoRaWAN join config */
+    struct lorawan_join_config join_cfg = {
+        .mode = LORAWAN_ACT_OTAA,
+        .dev_eui = dev_eui,
+        .otaa = {
+            .join_eui = join_eui,
+            .app_key = app_key,
+            .nwk_key = app_key,
+        },
+    };
+
+    /* Join LoRaWAN network */
+    LOG_INF("Joining network over OTAA");
+    ret = lorawan_join(&join_cfg);
+    if (ret < 0) {
+        LOG_ERR("lorawan_join failed: %d", ret);
+        return;
+    }
+
+
     while (1) {
         ret = k_msgq_get(&lorawan_msgq, &sys_data, K_FOREVER);
         if (ret == 0) {
