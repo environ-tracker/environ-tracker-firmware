@@ -9,7 +9,6 @@
 
 
 #define BEACON_LINE_SIZE 11
-#define MAX_CACHED_NETWORKS 4
 
 #define BEACON_ID_INIT(major, minor) (major << 16) | minor
 

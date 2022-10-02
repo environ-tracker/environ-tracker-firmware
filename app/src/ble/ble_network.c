@@ -1,34 +1,102 @@
+#include <kernel.h>
 #include <stdio.h>
 #include <string.h>
+#include <posix/time.h>
 #include <bluetooth/uuid.h>
 #include <fs/fs.h>
-
 #include <logging/log.h>
-LOG_MODULE_REGISTER(ble_network);
 
 #include "ble/ble_network.h"
 #include "file/file_common.h"
 
+LOG_MODULE_REGISTER(ble_network);
 
-bool is_supported_network(const struct bt_uuid *network)
+
+#define MAX_CACHED_NETWORKS 4
+
+
+struct network_cache_entry {
+    struct bt_uuid entry;
+    time_t last_access;
+};
+
+struct network_cache {
+    int number_cached;
+    struct network_cache_entry cache[MAX_CACHED_NETWORKS];
+};
+
+static struct network_cache network_cache;
+K_MUTEX_DEFINE(network_cache_mutex);
+
+
+static int network_is_cached(const struct bt_uuid *network)
 {
-    // NOTE: Should cache be kept here??
-    static struct bt_uuid network_cache[MAX_CACHED_NETWORKS];
-    static int cached_networks = 0;
+    struct timespec time;
+    int ret;
 
-    if (cached_networks) {
-        for (int i = 0; i < cached_networks; ++i) {
-            if (bt_uuid_cmp(&network_cache[i], network) == 0) {
-                return true;
-            }
+    ret = k_mutex_lock(&network_cache_mutex, K_MSEC(1));
+    if (ret != 0) {
+        return ret;
+    }
+
+    for (int i = 0; i < network_cache.number_cached; ++i) {
+        if (bt_uuid_cmp(&network_cache.cache[i].entry, network) == 0) {
+            clock_gettime(CLOCK_REALTIME, &time);
+            
+            network_cache.cache[i].last_access = time.tv_sec;
+            ret = 0;
+            goto out;
         }
     }
 
-    if (find_network(network) == 0) {
-        if (cached_networks + 1 < MAX_CACHED_NETWORKS) {
-            bt_uuid_create(&network_cache[cached_networks++], 
-                    BT_UUID_128(network)->val, BT_UUID_SIZE_128);
+    ret = -EEXIST;
+
+out: 
+    k_mutex_unlock(&network_cache_mutex);
+    return ret;
+}
+
+static int add_network_to_cache(const struct bt_uuid *network)
+{
+    int ret;
+
+    ret = k_mutex_lock(&network_cache_mutex, K_MSEC(1));
+    if (ret != 0) {
+        return ret;
+    }
+
+    if (network_cache.number_cached < MAX_CACHED_NETWORKS) {
+        bt_uuid_create(&network_cache.cache[network_cache.number_cached].entry, 
+                BT_UUID_128(network)->val, BT_UUID_SIZE_128);
+
+        network_cache.number_cached++;
+    } else {
+        int pos = 0;
+
+        for (int i = 0; i < MAX_CACHED_NETWORKS; ++i) {
+            if (network_cache.cache[i].last_access < 
+                    network_cache.cache[pos].last_access) {
+                pos = i;
+            }
         }
+
+        bt_uuid_create(&network_cache.cache[pos].entry, 
+                BT_UUID_128(network)->val, BT_UUID_SIZE_128);
+    }
+
+    k_mutex_unlock(&network_cache_mutex);
+    return ret;
+}
+
+
+bool is_supported_network(const struct bt_uuid *network)
+{
+    if (network_is_cached(network) == 0) {
+        return true;
+    }
+
+    if (find_network(network) == 0) {
+        add_network_to_cache(network);
 
         return true;
     }
