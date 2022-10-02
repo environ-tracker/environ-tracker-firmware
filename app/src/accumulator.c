@@ -1,5 +1,4 @@
 #include <zephyr.h>
-#include <posix/time.h>
 #include <logging/log.h>
 
 #include "accumulator.h"
@@ -31,10 +30,7 @@ K_EVENT_DEFINE(data_events);
  */
 void accumulator_thread(void *a, void *b, void *c)
 {
-    struct environ_data data = {0};   
-    enum activity activity; 
     struct system_data sys_data = {0};
-    struct timespec time = {0};
     int err;
     bool lorawan = true;
 
@@ -47,13 +43,13 @@ void accumulator_thread(void *a, void *b, void *c)
                 ACTIVITY_DATA_PENDING | LOCATION_DATA_PENDING, true, 
                 K_FOREVER);
 
-        err = k_msgq_get(&environ_data_msgq, &data, K_NO_WAIT);
+        err = k_msgq_get(&environ_data_msgq, &sys_data.environ, K_NO_WAIT);
         if (err != 0) {
             LOG_ERR("environ data receive error: %d", err);
             continue;
         }
 
-        err = k_msgq_get(&activity_msgq, &activity, K_NO_WAIT);
+        err = k_msgq_get(&activity_msgq, &sys_data.activity, K_NO_WAIT);
         if (err != 0) {
             LOG_ERR("activity receive error: %d", err);
             continue;
@@ -65,17 +61,11 @@ void accumulator_thread(void *a, void *b, void *c)
             continue;
         }
 
+        LOG_WRN("all msgq read");
 
-        clock_gettime(CLOCK_REALTIME, &time);
 
         if (lorawan) {
-            sys_data.timestamp = time.tv_sec;
-            sys_data.activity = ACTIVITY_UNDEFINED;
-            sys_data.environ = data;
             sys_data.location_source = LOCATION_BLE;
-            sys_data.location.longitude = 102031;
-            sys_data.location.latitude = 102031;
-            sys_data.location.altitude = 102031;
 
             // Send to lorawan_thread
             while (k_msgq_put(&lorawan_msgq, &sys_data, K_MSEC(2)) != 0) {
