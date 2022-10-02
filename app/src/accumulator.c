@@ -44,7 +44,7 @@ void accumulator_thread(void *a, void *b, void *c)
     while (1) {
         /* Wait for all data to be ready */
         k_event_wait_all(&data_events, ENVIRON_DATA_PENDING | 
-                ACTIVITY_DATA_PENDING, true, 
+                ACTIVITY_DATA_PENDING | LOCATION_DATA_PENDING, true, 
                 K_FOREVER);
 
         err = k_msgq_get(&environ_data_msgq, &data, K_NO_WAIT);
@@ -59,7 +59,11 @@ void accumulator_thread(void *a, void *b, void *c)
             continue;
         }
 
-        LOG_WRN("both msgq read");
+        err = k_msgq_get(&location_msgq, &sys_data.location, K_NO_WAIT);
+        if (err != 0) {
+            LOG_ERR("location receive error: %d", err);
+            continue;
+        }
 
 
         clock_gettime(CLOCK_REALTIME, &time);
