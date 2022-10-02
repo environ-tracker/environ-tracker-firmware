@@ -1,8 +1,9 @@
 #ifndef BLE_NETWORK_H
 #define BLE_NETWORK_H
 
-#include <bluetooth/uuid.h>
 #include <kernel.h>
+#include <posix/time.h>
+#include <bluetooth/uuid.h>
 
 #include "location.h"
 
@@ -35,7 +36,7 @@ struct ibeacon_file_info {
  */
 struct ibeacon_packet {
     struct ibeacon beacon;
-    int64_t discovered_time;
+    time_t discovered_time;
     int8_t tx_power;
     int8_t rssi;
     sys_snode_t next;
