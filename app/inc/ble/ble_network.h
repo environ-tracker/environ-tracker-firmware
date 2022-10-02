@@ -4,20 +4,14 @@
 #include <bluetooth/uuid.h>
 #include <kernel.h>
 
+#include "location.h"
+
 
 #define BEACON_LINE_SIZE 11
 #define MAX_CACHED_NETWORKS 4
 
 #define BEACON_ID_INIT(major, minor) (major << 16) | minor
 
-/**
- * @brief The location of a beacon
- */
-struct location {
-    int32_t latitude;
-    int32_t longitude;
-    int32_t altitude;
-} __packed;
 
 /**
  * @brief The core details to store about a beacon
