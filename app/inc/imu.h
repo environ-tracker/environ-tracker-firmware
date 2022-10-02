@@ -1,6 +1,7 @@
 #ifndef IMU_H
 #define IMU_H
 
+#include <zephyr.h>
 #include <drivers/sensor.h>
 
 enum activity {
@@ -19,5 +20,7 @@ struct imu_data {
     struct sensor_value gyro_y;
     struct sensor_value gyro_z;
 };
+
+extern struct k_msgq activity_msgq;
 
 #endif /* IMU_H */

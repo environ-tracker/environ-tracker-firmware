@@ -6,6 +6,7 @@
 #include <logging/log.h>
 
 #include "imu.h"
+#include "accumulator.h"
 
 LOG_MODULE_REGISTER(imu);
 
@@ -26,6 +27,8 @@ LOG_MODULE_REGISTER(imu);
 
 
 RING_BUF_ITEM_DECLARE_SIZE(imu_ring_buf, IMU_RINGBUF_SIZE);
+
+K_MSGQ_DEFINE(activity_msgq, sizeof(enum activity), 10, 4);
 
 
 static void data_trig_handler(const struct device *dev, 
@@ -121,18 +124,28 @@ void imu_thread(void *a, void *b, void *c)
     }
 
     struct imu_data data[IMU_ODR];
+    enum activity activity = ACTIVITY_UNDEFINED;
 
     while (1) {
         
         // NOTE: Potentially change this to a semaphore given from ISR, where ISR checks ring_buf_size?
         if ((ring_buf_size_get(&imu_ring_buf) / IMU_DATA_WORD_SIZE) > IMU_ODR) {
-            // LOG_INF("There is enough data items");
+            
             ring_buf_get_claim(&imu_ring_buf, (uint8_t **)&data, 
                     IMU_ODR * IMU_DATA_WORD_SIZE);
 
             // TODO: process claimed data
 
             ring_buf_get_finish(&imu_ring_buf, IMU_ODR * IMU_DATA_WORD_SIZE);
+
+            /* Send current activity */
+            while (k_msgq_put(&activity_msgq, &activity, K_NO_WAIT) != 0) {
+                /* message queue is full: purge old data & try again */
+                k_msgq_purge(&activity_msgq);
+                LOG_DBG("activity_msgq has been purged");
+            }
+
+            k_event_post(&data_events, ACTIVITY_DATA_PENDING);
         } else {
             k_msleep(20);
         }

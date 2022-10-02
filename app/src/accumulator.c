@@ -4,6 +4,7 @@
 
 #include "accumulator.h"
 #include "environ.h"
+#include "imu.h"
 
 
 LOG_MODULE_REGISTER(accumulator);
@@ -26,7 +27,8 @@ K_EVENT_DEFINE(data_events);
  */
 void accumulator_thread(void *a, void *b, void *c)
 {
-    struct environ_data data = {0};    
+    struct environ_data data = {0};   
+    enum activity activity; 
     struct system_data sys_data = {0};
     struct timespec time = {0};
     int err;
@@ -37,12 +39,8 @@ void accumulator_thread(void *a, void *b, void *c)
 
     while (1) {
         /* Wait for all data to be ready */
-        // k_event_wait_all(&data_events, ENVIRON_DATA_PENDING | 
-        //         ACTIVITY_DATA_PENDING | LOCATION_DATA_PENDING, true, 
-        //         K_FOREVER);
-
-        k_event_wait(&data_events, ENVIRON_DATA_PENDING | 
-                ACTIVITY_DATA_PENDING | LOCATION_DATA_PENDING, true, 
+        k_event_wait_all(&data_events, ENVIRON_DATA_PENDING | 
+                ACTIVITY_DATA_PENDING, true, 
                 K_FOREVER);
 
         err = k_msgq_get(&environ_data_msgq, &data, K_NO_WAIT);
@@ -50,6 +48,14 @@ void accumulator_thread(void *a, void *b, void *c)
             LOG_ERR("environ data receive error: %d", err);
             continue;
         }
+
+        err = k_msgq_get(&activity_msgq, &activity, K_NO_WAIT);
+        if (err != 0) {
+            LOG_ERR("activity receive error: %d", err);
+            continue;
+        }
+
+        LOG_WRN("both msgq read");
 
 
         clock_gettime(CLOCK_REALTIME, &time);
