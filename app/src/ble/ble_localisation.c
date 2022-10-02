@@ -113,11 +113,12 @@ static bool parse_ad(struct bt_data *data, void *user_data)
     }
 
     /* Ensure endianness */
-    ad_data->major = sys_cpu_to_be16(*(uint16_t *)&data->data[20]);
-    ad_data->minor = sys_cpu_to_be16(*(uint16_t *)&data->data[22]);
+    ad_data->major = sys_be16_to_cpu(*(uint16_t *)&data->data[20]);
+    ad_data->minor = sys_be16_to_cpu(*(uint16_t *)&data->data[22]);
     ad_data->tx_power = data->data[24];
 
-    LOG_DBG("maj: %d, min: %d, tx: %d", ad_data->major, ad_data->minor, ad_data->tx_power);
+    LOG_DBG("maj: %d, min: %d, tx: %d", ad_data->major, ad_data->minor, 
+            ad_data->tx_power);
 
     return false;
 }
