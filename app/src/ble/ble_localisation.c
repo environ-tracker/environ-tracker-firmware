@@ -152,7 +152,8 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
      * See if the network is supported (by checking the UUID), if it is then 
      * the beacon should be in the database 
     */
-    if (bt_uuid_cmp(&supported_beacon_network.uuid, &beacon_data->uuid.uuid) != 0)
+    if (bt_uuid_cmp(&supported_beacon_network.uuid, &beacon_data->uuid.uuid) 
+            != 0)
         return;
 
     /* Check if the ibeacon is already in the list */
