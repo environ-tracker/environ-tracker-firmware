@@ -36,7 +36,6 @@ target_sources(app
         src/ble/ble_helpers.c
         src/ble/ble_network.c
         src/controller.c
-        tests/ble_tests.c
         src/init/gpio_init.c
         src/init/log_init.c
         src/init/time_init.c
