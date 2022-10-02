@@ -65,13 +65,13 @@ K_MEM_SLAB_DEFINE_STATIC(ibeacon_mem, sizeof(struct ibeacon_data),
 static void empty_ibeacon_list(void)
 {
     struct ibeacon_data *beacon;
-    struct sys_snode_t *node;
+    sys_snode_t *node;
 
     k_mutex_lock(&ibeacon_list_mutex, K_MSEC(1));
     while ((node = sys_slist_get(&ibeacon_list)) != NULL) {
         beacon = SYS_SLIST_CONTAINER(node, beacon, next);
 
-        k_mem_slab_free(&ibeacon_mem, &beacon);
+        k_mem_slab_free(&ibeacon_mem, (void **)&beacon);
     }
     k_mutex_unlock(&ibeacon_list_mutex);
 }
@@ -105,7 +105,7 @@ static bool parse_ad(struct bt_data *data, void *user_data)
     }
 
     /* Save UUID in correct endianness */
-    sys_mem_swap(&data->data[4], 16);
+    sys_mem_swap((void *)&data->data[4], 16);
     ret = bt_uuid_create(&ad_data->uuid.uuid, &data->data[4], 16);
     if (!ret) {
         user_data = NULL;
@@ -151,7 +151,7 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
      * See if the network is supported (by checking the UUID), if it is then 
      * the beacon should be in the database 
     */
-    if (bt_uuid_cmp(&supported_beacon_network.uuid, &beacon_data->uuid) != 0)
+    if (bt_uuid_cmp(&supported_beacon_network.uuid, &beacon_data->uuid.uuid) != 0)
         return;
 
     /* Check if the ibeacon is already in the list */
@@ -170,7 +170,7 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
     LOG_INF("New iBeacon");
 
     // TODO: Maybe handle a non-alloc better??
-    ret = k_mem_slab_alloc(&ibeacon_mem, &beacon_data, K_NO_WAIT);
+    ret = k_mem_slab_alloc(&ibeacon_mem, (void **)&beacon_data, K_NO_WAIT);
     if (ret != 0) {
         LOG_ERR("Beacon packet couldn't be allocated (ret %d)", ret);
 
@@ -217,7 +217,7 @@ void ble_localisation(void *a, void *b, void *c)
 {
     int ret, beacons_found = 0, missed_scans = 0;
     struct ibeacon_data *beacon;
-    struct sys_snode_t *node;
+    sys_snode_t *node;
 
     sys_slist_init(&ibeacon_list);
 
@@ -275,7 +275,7 @@ void ble_localisation(void *a, void *b, void *c)
                 
                 // TODO: Find a position estimate
 
-                k_mem_slab_free(&ibeacon_mem, &beacon);
+                k_mem_slab_free(&ibeacon_mem, (void **)&beacon);
             }
             k_mutex_unlock(&ibeacon_list_mutex);
 
