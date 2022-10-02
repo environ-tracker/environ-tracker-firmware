@@ -2,6 +2,7 @@
 #include <logging/log.h>
 
 #include "file/file_common.h"
+#include "file/file_init.h"
 
 
 LOG_MODULE_REGISTER(controller);
@@ -40,6 +41,10 @@ int increment_boot_count(void)
 void controller_thread(void *a, void *b, void *c)
 {
     LOG_INF("Controller started");
+
+    #ifdef CONFIG_APP_INIT_BEACON_FILES
+    initialise_files();
+    #endif /* CONFIG_APP_INIT_BEACON_FILES */
 
     increment_boot_count();
 
