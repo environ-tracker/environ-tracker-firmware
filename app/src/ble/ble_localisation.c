@@ -2,6 +2,7 @@
 
 #include <zephyr.h>
 #include <kernel.h>
+#include <posix/time.h>
 
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/hci.h>
@@ -34,7 +35,7 @@ static const struct bt_uuid_128 supported_beacon_network = BT_UUID_INIT_128(
 
 /* Stores all required ibeacon data */
 struct ibeacon_data {
-    int64_t discovered_time;
+    time_t discovered_time;
     struct bt_uuid_128 uuid; 
     uint16_t major;
     uint16_t minor;
@@ -131,6 +132,7 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
         struct net_buf_simple *ad)
 {
     struct ibeacon_data *beacon_data, *tmp, beacon_data_tmp;
+    struct timespec discovered_time;
     int ret;
 
     beacon_data = &beacon_data_tmp;
@@ -144,9 +146,11 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
     if (beacon_data == NULL)
         return;
 
+    clock_gettime(CLOCK_REALTIME, &discovered_time);
+
     /* Save RSSI and the time the packet was received */
     beacon_data->rssi = rssi;
-    beacon_data->discovered_time = k_uptime_get();
+    beacon_data->discovered_time = discovered_time.tv_sec;
 
     /* 
      * See if the network is supported (by checking the UUID), if it is then 
