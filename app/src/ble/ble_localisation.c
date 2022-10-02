@@ -11,6 +11,9 @@
 
 #include <logging/log.h>
 
+#include "accumulator.h"
+#include "location.h"
+
 LOG_MODULE_REGISTER(ble_localisation, LOG_LEVEL_INF);
 
 
@@ -275,6 +278,21 @@ void ble_localisation(void *a, void *b, void *c)
                 k_mem_slab_free(&ibeacon_mem, &beacon);
             }
             k_mutex_unlock(&ibeacon_list_mutex);
+
+            struct location location = {
+                .altitude = 1000,
+                .latitude = 2000,
+                .longitude = 213,
+            };
+
+            /* Send environmental data */
+            while (k_msgq_put(&location_msgq, &location, K_NO_WAIT) != 0) {
+                /* message queue is full: purge old data & try again */
+                k_msgq_purge(&location_msgq);
+                LOG_DBG("location_msgq has been purged");
+            }
+
+            k_event_post(&data_events, LOCATION_DATA_PENDING);
         }
     }
 }

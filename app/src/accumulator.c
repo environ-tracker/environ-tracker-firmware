@@ -5,6 +5,7 @@
 #include "accumulator.h"
 #include "environ.h"
 #include "imu.h"
+#include "location.h"
 
 
 LOG_MODULE_REGISTER(accumulator);
@@ -14,8 +15,11 @@ LOG_MODULE_REGISTER(accumulator);
 #define ACCUMULATOR_PRIORITY    6
 
 
-// Create the message queue for the LoRaWAN backend
+/* Create the message queue for the LoRaWAN backend */
 K_MSGQ_DEFINE(lorawan_msgq, sizeof(struct system_data), 5, 4);
+
+/* Create message queue to receive location data from */
+K_MSGQ_DEFINE(location_msgq, sizeof(struct location), 5, 4);
 
 /* Input data pending event group */
 K_EVENT_DEFINE(data_events);
