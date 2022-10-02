@@ -20,7 +20,7 @@ struct ibeacon {
     struct bt_uuid_128 network_uuid;
     uint32_t id;
     struct location location;
-} __packed;
+};
 
 /**
  * @brief Information about the beacon stored in a file
