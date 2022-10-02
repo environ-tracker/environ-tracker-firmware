@@ -186,31 +186,6 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 }
 
 /**
- * @brief Restarts BLE advertisement scanning
- */
-void scan_restart_work_handler(struct k_work *work)
-{
-    LOG_INF("Scan restart timer elapsed, restarting iBeacon scanning");
-
-    bt_le_scan_start(&scan_params, scan_cb);
-    k_thread_resume(ble_localisation_id);
-}
-
-/* Defines the k_work to restart scanning */
-K_WORK_DEFINE(scan_restart, scan_restart_work_handler);
-
-/**
- * @brief Timer callback to restart BLE scanning
- */
-static void scan_restart_handler(struct k_timer *timer)
-{
-    k_work_submit(&scan_restart);
-}
-
-/* Timer to restart scanning */
-K_TIMER_DEFINE(scan_restart_timer, scan_restart_handler, NULL);
-
-/**
  * @brief Thread to perform localisation using iBeacons 
  */
 void ble_localisation(void *a, void *b, void *c)
@@ -253,12 +228,12 @@ void ble_localisation(void *a, void *b, void *c)
                 /* Scanning stopped, so empty the list */
                 empty_ibeacon_list();
 
-                k_timer_start(&scan_restart_timer, K_MINUTES(10), K_FOREVER);
-
                 LOG_INF("Missed %d scanning periods, stopped iBeacon "
                         "scanning and suspending", missed_scans);
 
-                k_thread_suspend(ble_localisation_id);
+                k_sleep(K_MINUTES(10));
+
+                bt_le_scan_start(&scan_params, scan_cb);
 
                 missed_scans = 0;
             }
