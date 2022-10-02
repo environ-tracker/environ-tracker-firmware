@@ -19,7 +19,6 @@ bool is_supported_network(const struct bt_uuid *network)
     if (cached_networks) {
         for (int i = 0; i < cached_networks; ++i) {
             if (bt_uuid_cmp(&network_cache[i], network) == 0) {
-                LOG_INF("Cache hit");
                 return true;
             }
         }

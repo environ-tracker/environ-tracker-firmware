@@ -14,6 +14,7 @@
 
 #include "accumulator.h"
 #include "location.h"
+#include "ble_network.h"
 
 LOG_MODULE_REGISTER(ble_localisation, LOG_LEVEL_INF);
 
@@ -29,9 +30,6 @@ LOG_MODULE_REGISTER(ble_localisation, LOG_LEVEL_INF);
 /* This delay is so that BLE logs can be seen from the shell */
 #define BLE_LOCALISATION_STARTUP_DELAY 500
 
-/* NOTE: This is currently the only supported iBeacon network UUID */
-static const struct bt_uuid_128 supported_beacon_network = BT_UUID_INIT_128(
-        BT_UUID_128_ENCODE(0x7aaf1b67, 0xf3c0, 0x4a54, 0xb314, 0x58fff1960a40));
 
 /* Stores all required ibeacon data */
 struct ibeacon_data {
@@ -62,20 +60,99 @@ K_MUTEX_DEFINE(ibeacon_list_mutex);
 K_MEM_SLAB_DEFINE_STATIC(ibeacon_mem, sizeof(struct ibeacon_data), 
         MAX_LOCALISATION_BEACONS, 4);
 
+K_MSGQ_DEFINE(ibeacon_msgq, sizeof(struct ibeacon_data), 30, 4);
 
-static void empty_ibeacon_list(void)
+
+static int empty_ibeacon_list(void)
 {
     struct ibeacon_data *beacon;
     sys_snode_t *node;
 
-    k_mutex_lock(&ibeacon_list_mutex, K_MSEC(1));
+    int ret = k_mutex_lock(&ibeacon_list_mutex, K_MSEC(1));
+    if (ret != 0) {
+        return ret;
+    }
+
     while ((node = sys_slist_get(&ibeacon_list)) != NULL) {
         beacon = SYS_SLIST_CONTAINER(node, beacon, next);
 
         k_mem_slab_free(&ibeacon_mem, (void **)&beacon);
     }
     k_mutex_unlock(&ibeacon_list_mutex);
+
+    return 0;
 }
+
+static int list_contains_ibeacon(struct ibeacon_data *ibeacon)
+{
+    struct ibeacon_data *tmp;
+
+    /* Check if the ibeacon is already in the list */
+    int ret = k_mutex_lock(&ibeacon_list_mutex, K_MSEC(1));
+    if (ret != 0) {
+        return ret;
+    }
+
+    SYS_SLIST_FOR_EACH_CONTAINER(&ibeacon_list, tmp, next) {
+        
+        if (ibeacon->major == tmp->major && ibeacon->minor == tmp->minor) {
+
+            k_mutex_unlock(&ibeacon_list_mutex);
+            return -EEXIST;
+        }
+    }
+    k_mutex_unlock(&ibeacon_list_mutex);
+
+    return 0;
+}
+
+static int add_ibeacon_to_list(struct ibeacon_data *ibeacon)
+{
+    struct ibeacon_data *tmp;
+    int ret;
+
+    ret = k_mutex_lock(&ibeacon_list_mutex, K_MSEC(1));
+    if (ret != 0) {
+        return ret;
+    }
+
+    ret = k_mem_slab_alloc(&ibeacon_mem, (void **)&tmp, K_NO_WAIT);
+    if (ret != 0) {
+        LOG_ERR("Beacon packet couldn't be allocated (ret %d)", ret);
+
+        k_mutex_unlock(&ibeacon_list_mutex);
+        return ret;
+    }
+
+    memcpy(tmp, ibeacon, sizeof(struct ibeacon_data));
+
+    sys_slist_append(&ibeacon_list, &tmp->next);
+    k_mutex_unlock(&ibeacon_list_mutex);
+
+    return 0;
+}
+
+static void filter_ibeacon(struct k_work *work)
+{
+    struct ibeacon_data beacon;
+
+    if (k_msgq_get(&ibeacon_msgq, &beacon, K_NO_WAIT) != 0) {
+        return;
+    }
+
+    if (!is_supported_network(&beacon.uuid.uuid)) {
+        return;
+    }
+
+    if (list_contains_ibeacon(&beacon) == 0) {
+        add_ibeacon_to_list(&beacon);
+        LOG_INF("Added beacon: id: %d to list", BEACON_ID_INIT(beacon.major, 
+                beacon.minor));
+    }
+}
+
+K_WORK_DEFINE(ibeacon_filter_work, filter_ibeacon);
+
 
 /**
  * @brief Parses the input data to see if it is an iBeacon packet. If it is,
@@ -131,9 +208,8 @@ static bool parse_ad(struct bt_data *data, void *user_data)
 static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type, 
         struct net_buf_simple *ad)
 {
-    struct ibeacon_data *beacon_data, *tmp, beacon_data_tmp;
+    struct ibeacon_data *beacon_data, beacon_data_tmp;
     struct timespec discovered_time;
-    int ret;
 
     beacon_data = &beacon_data_tmp;
 
@@ -152,43 +228,9 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
     beacon_data->rssi = rssi;
     beacon_data->discovered_time = discovered_time.tv_sec;
 
-    /* 
-     * See if the network is supported (by checking the UUID), if it is then 
-     * the beacon should be in the database 
-    */
-    if (bt_uuid_cmp(&supported_beacon_network.uuid, &beacon_data->uuid.uuid) 
-            != 0)
-        return;
+    k_msgq_put(&ibeacon_msgq, beacon_data, K_MSEC(10));
 
-    /* Check if the ibeacon is already in the list */
-    k_mutex_lock(&ibeacon_list_mutex, K_NO_WAIT);
-    SYS_SLIST_FOR_EACH_CONTAINER(&ibeacon_list, tmp, next) {
-        
-        if (beacon_data->major == tmp->major && 
-                beacon_data->minor == tmp->minor) {
-
-            k_mutex_unlock(&ibeacon_list_mutex);
-            return;
-        }
-    }
-
-    // DEBUG
-    LOG_INF("New iBeacon");
-
-    // TODO: Maybe handle a non-alloc better??
-    ret = k_mem_slab_alloc(&ibeacon_mem, (void **)&beacon_data, K_NO_WAIT);
-    if (ret != 0) {
-        LOG_ERR("Beacon packet couldn't be allocated (ret %d)", ret);
-
-        k_mutex_unlock(&ibeacon_list_mutex);
-        return;
-    }
-
-    memcpy(beacon_data, &beacon_data_tmp, sizeof(struct ibeacon_data));
-
-    /* ibeacon wasn't in the list, so append it */
-    sys_slist_append(&ibeacon_list, &beacon_data->next);
-    k_mutex_unlock(&ibeacon_list_mutex);
+    k_work_submit(&ibeacon_filter_work);
 }
 
 /**
