@@ -53,7 +53,7 @@ int find_beacon(struct ibeacon *beacon)
     strcpy(network_file, "beacons/");
     position = strlen(network_file);
     
-    bt_uuid_to_str(&beacon->network_uuid.uuid, &network_file[position], 
+    bt_uuid_to_str(&beacon->network.uuid, &network_file[position], 
             FILE_NAME_LEN - position);
 
     ret = search_file(network_file, (uint8_t *)&beacon->id, sizeof(beacon->id), 

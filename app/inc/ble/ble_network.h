@@ -18,7 +18,7 @@
  * @brief The core details to store about a beacon
  */
 struct ibeacon {
-    struct bt_uuid_128 network_uuid;
+    struct bt_uuid_128 network;
     uint32_t id;
     struct location location;
 };

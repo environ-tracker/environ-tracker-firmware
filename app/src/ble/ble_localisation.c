@@ -31,17 +31,6 @@ LOG_MODULE_REGISTER(ble_localisation, LOG_LEVEL_INF);
 #define BLE_LOCALISATION_STARTUP_DELAY 500
 
 
-/* Stores all required ibeacon data */
-struct ibeacon_data {
-    time_t discovered_time;
-    struct bt_uuid_128 uuid; 
-    uint16_t major;
-    uint16_t minor;
-    int8_t tx_power;
-    int8_t rssi;
-    sys_snode_t next;
-};
-
 /* Scan parameters for BLE advertisement scanning */
 static const struct bt_le_scan_param scan_params = {
         .type = BT_HCI_LE_SCAN_PASSIVE,
@@ -57,15 +46,15 @@ static sys_slist_t ibeacon_list;
 K_MUTEX_DEFINE(ibeacon_list_mutex);
 
 /* Memory slab to allocate ibeacon data from */
-K_MEM_SLAB_DEFINE_STATIC(ibeacon_mem, sizeof(struct ibeacon_data), 
+K_MEM_SLAB_DEFINE_STATIC(ibeacon_mem, sizeof(struct ibeacon_packet), 
         MAX_LOCALISATION_BEACONS, 4);
 
-K_MSGQ_DEFINE(ibeacon_msgq, sizeof(struct ibeacon_data), 30, 4);
+K_MSGQ_DEFINE(ibeacon_msgq, sizeof(struct ibeacon_packet), 30, 4);
 
 
 static int empty_ibeacon_list(void)
 {
-    struct ibeacon_data *beacon;
+    struct ibeacon_packet *beacon;
     sys_snode_t *node;
 
     int ret = k_mutex_lock(&ibeacon_list_mutex, K_MSEC(1));
@@ -83,9 +72,9 @@ static int empty_ibeacon_list(void)
     return 0;
 }
 
-static int list_contains_ibeacon(struct ibeacon_data *ibeacon)
+static int list_contains_ibeacon(struct ibeacon_packet *ibeacon)
 {
-    struct ibeacon_data *tmp;
+    struct ibeacon_packet *tmp;
 
     /* Check if the ibeacon is already in the list */
     int ret = k_mutex_lock(&ibeacon_list_mutex, K_MSEC(1));
@@ -95,7 +84,7 @@ static int list_contains_ibeacon(struct ibeacon_data *ibeacon)
 
     SYS_SLIST_FOR_EACH_CONTAINER(&ibeacon_list, tmp, next) {
         
-        if (ibeacon->major == tmp->major && ibeacon->minor == tmp->minor) {
+        if (ibeacon->beacon.id == tmp->beacon.id) {
 
             k_mutex_unlock(&ibeacon_list_mutex);
             return -EEXIST;
@@ -106,9 +95,9 @@ static int list_contains_ibeacon(struct ibeacon_data *ibeacon)
     return 0;
 }
 
-static int add_ibeacon_to_list(struct ibeacon_data *ibeacon)
+static int add_ibeacon_to_list(struct ibeacon_packet *ibeacon)
 {
-    struct ibeacon_data *tmp;
+    struct ibeacon_packet *tmp;
     int ret;
 
     ret = k_mutex_lock(&ibeacon_list_mutex, K_MSEC(1));
@@ -124,7 +113,7 @@ static int add_ibeacon_to_list(struct ibeacon_data *ibeacon)
         return ret;
     }
 
-    memcpy(tmp, ibeacon, sizeof(struct ibeacon_data));
+    memcpy(tmp, ibeacon, sizeof(struct ibeacon_packet));
 
     sys_slist_append(&ibeacon_list, &tmp->next);
     k_mutex_unlock(&ibeacon_list_mutex);
@@ -134,20 +123,22 @@ static int add_ibeacon_to_list(struct ibeacon_data *ibeacon)
 
 static void filter_ibeacon(struct k_work *work)
 {
-    struct ibeacon_data beacon;
+    struct ibeacon_packet ibeacon;
 
-    if (k_msgq_get(&ibeacon_msgq, &beacon, K_NO_WAIT) != 0) {
+    if (k_msgq_get(&ibeacon_msgq, &ibeacon, K_NO_WAIT) != 0) {
         return;
     }
 
-    if (!is_supported_network(&beacon.uuid.uuid)) {
+    if (!is_supported_network(&ibeacon.beacon.network.uuid)) {
         return;
     }
 
-    if (list_contains_ibeacon(&beacon) == 0) {
-        add_ibeacon_to_list(&beacon);
-        LOG_INF("Added beacon: id: %d to list", BEACON_ID_INIT(beacon.major, 
-                beacon.minor));
+    if (list_contains_ibeacon(&ibeacon) == 0) {
+        if (add_ibeacon_to_list(&ibeacon) != 0) {
+            return;
+        }
+        LOG_INF("filter_ibeacon: Added beacon: id: %d to list", 
+                ibeacon.beacon.id);
     }
 }
 
@@ -160,7 +151,7 @@ K_WORK_DEFINE(ibeacon_filter_work, filter_ibeacon);
  */
 static bool parse_ad(struct bt_data *data, void *user_data)
 {
-    struct ibeacon_data *ad_data = user_data;
+    struct ibeacon_packet *ad_data = user_data;
     int ret;
  
     /* 
@@ -184,19 +175,21 @@ static bool parse_ad(struct bt_data *data, void *user_data)
 
     /* Save UUID in correct endianness */
     sys_mem_swap((void *)&data->data[4], 16);
-    ret = bt_uuid_create(&ad_data->uuid.uuid, &data->data[4], 16);
+    ret = bt_uuid_create(&ad_data->beacon.network.uuid, &data->data[4], 
+            BT_UUID_SIZE_128);
     if (!ret) {
         user_data = NULL;
         return false;
     }
 
     /* Ensure endianness */
-    ad_data->major = sys_be16_to_cpu(*(uint16_t *)&data->data[20]);
-    ad_data->minor = sys_be16_to_cpu(*(uint16_t *)&data->data[22]);
+    uint16_t major = sys_be16_to_cpu(*(uint16_t *)&data->data[20]);
+    uint16_t minor = sys_be16_to_cpu(*(uint16_t *)&data->data[22]);
+    
+    ad_data->beacon.id = BEACON_ID_INIT(major, minor);
     ad_data->tx_power = data->data[24];
 
-    LOG_DBG("maj: %d, min: %d, tx: %d", ad_data->major, ad_data->minor, 
-            ad_data->tx_power);
+    LOG_DBG("id: %d, tx: %d", ad_data->beacon.id, ad_data->tx_power);
 
     return false;
 }
@@ -208,7 +201,7 @@ static bool parse_ad(struct bt_data *data, void *user_data)
 static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type, 
         struct net_buf_simple *ad)
 {
-    struct ibeacon_data *beacon_data, beacon_data_tmp;
+    struct ibeacon_packet *beacon_data, beacon_data_tmp;
     struct timespec discovered_time;
 
     beacon_data = &beacon_data_tmp;
@@ -239,7 +232,7 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 void ble_localisation(void *a, void *b, void *c)
 {
     int ret, beacons_found = 0, missed_scans = 0;
-    struct ibeacon_data *beacon;
+    struct ibeacon_packet *beacon;
     sys_snode_t *node;
 
     sys_slist_init(&ibeacon_list);
@@ -293,8 +286,8 @@ void ble_localisation(void *a, void *b, void *c)
                 beacon = SYS_SLIST_CONTAINER(node, beacon, next);
                 
                 // DEBUG
-                LOG_INF("Beacon major: %u, minor %u, rssi %d", beacon->major, 
-                        beacon->minor, beacon->rssi);
+                LOG_INF("Beacon ID %u, rssi %d", beacon->beacon.id, 
+                        beacon->rssi);
                 
                 // TODO: Find a position estimate
 
