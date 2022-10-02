@@ -13,9 +13,15 @@
 #define LOCATION_DATA_PENDING   1 << 2
 
 
+enum location_source {
+    LOCATION_BLE = 0,
+    LOCATION_GNSS,
+};
+
 struct system_data {
     uint32_t timestamp;
     struct environ_data environ;
+    enum location_source location_source;
     struct location location;
     enum activity activity;
 }__attribute__((aligned(4)));

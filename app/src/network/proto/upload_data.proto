@@ -8,10 +8,16 @@ enum Activity {
     ACTIVITY_JUMP = 4;
 }
 
+enum LocationSource {
+    LOCATION_SOURCE_BLE = 0;
+    LOCATION_SOURCE_GNSS = 1;
+}
+
 message Location {
-    uint32 latitude = 1;
-    uint32 longitude = 2;
-    uint32 altitude = 3;
+    LocationSource location_source = 1;
+    uint32 latitude = 2;
+    uint32 longitude = 3;
+    uint32 altitude = 4;
 }
 
 message EnvironData {

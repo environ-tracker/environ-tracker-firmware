@@ -19,6 +19,7 @@ bool encode_message(uint8_t *buffer, size_t buffer_size, size_t *message_len,
     message.activity = data->activity;
     
     message.has_location = true;
+    message.location.location_source = data->location_source;
     message.location.latitude = data->location.latitude;
     message.location.longitude = data->location.longitude;
     message.location.altitude = data->location.altitude;

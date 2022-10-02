@@ -64,6 +64,7 @@ void accumulator_thread(void *a, void *b, void *c)
             sys_data.timestamp = time.tv_sec;
             sys_data.activity = ACTIVITY_UNDEFINED;
             sys_data.environ = data;
+            sys_data.location_source = LOCATION_BLE;
             sys_data.location.longitude = 102031;
             sys_data.location.latitude = 102031;
             sys_data.location.altitude = 102031;
