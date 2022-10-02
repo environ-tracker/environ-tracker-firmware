@@ -12,7 +12,7 @@ struct environ_data {
     struct sensor_value vis_light;
     struct sensor_value ir_light;
     struct sensor_value uv_index;
-}__attribute__((aligned(4)));
+};
 
 extern struct k_msgq environ_data_msgq;
 

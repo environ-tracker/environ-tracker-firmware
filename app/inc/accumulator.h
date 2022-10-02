@@ -24,7 +24,7 @@ struct system_data {
     enum location_source location_source;
     struct location location;
     enum activity activity;
-}__attribute__((aligned(4)));
+};
 
 extern struct k_msgq lorawan_msgq;
 
