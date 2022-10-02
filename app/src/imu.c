@@ -10,11 +10,11 @@
 LOG_MODULE_REGISTER(imu);
 
 
-#define IMU_NODE DT_LABEL(DT_COMPAT_GET_ANY_STATUS_OKAY(st_lsm6dso))
-
 #if !DT_HAS_COMPAT_STATUS_OKAY(st_lsm6dso)
 #error "Unsupported board: st,lsm6dso not enabled on devicetree"
 #endif
+
+#define IMU_NODE DT_LABEL(DT_COMPAT_GET_ANY_STATUS_OKAY(st_lsm6dso))
 
 #define IMU_STACK_SIZE  500
 #define IMU_PRIORITY    4
