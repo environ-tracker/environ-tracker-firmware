@@ -25,8 +25,8 @@ LOG_MODULE_REGISTER(imu);
 #define IMU_ODR 52
 #define IMU_RINGBUF_SIZE    IMU_ODR * IMU_DATA_WORD_SIZE * 5
 
-
-RING_BUF_ITEM_DECLARE_SIZE(imu_ring_buf, IMU_RINGBUF_SIZE);
+// BUG: Bug in usage of ring_buf somewhere
+// RING_BUF_ITEM_DECLARE_SIZE(imu_ring_buf, IMU_RINGBUF_SIZE);
 
 K_MSGQ_DEFINE(activity_msgq, sizeof(enum activity), 10, 4);
 
@@ -61,13 +61,14 @@ static void data_trig_handler(const struct device *dev,
 
     LOG_DBG("trig_counter: %d", trig_counter);
 
-    ret = ring_buf_item_put(&imu_ring_buf, 0, 0, (uint32_t *)&data,  
-            IMU_DATA_WORD_SIZE);
-    if (ret != 0) {
-        // NOTE not enough space, partial copy, shouldn't happen
-        LOG_ERR("Partial copy to imu_ring_buf, %d", ret);
-        ring_buf_reset(&imu_ring_buf);
-    }
+    // BUG: Bug in usage of ring_buf somewhere
+    // ret = ring_buf_item_put(&imu_ring_buf, 0, 0, (uint32_t *)&data,  
+    //         IMU_DATA_WORD_SIZE);
+    // if (ret != 0) {
+    //     // NOTE not enough space, partial copy, shouldn't happen
+    //     LOG_ERR("Partial copy to imu_ring_buf, %d", ret);
+    //     ring_buf_reset(&imu_ring_buf);
+    // }
 }
 
 static void tap_trig_handler(const struct device *dev, 
@@ -128,28 +129,30 @@ void imu_thread(void *a, void *b, void *c)
 
     while (1) {
         
+        // BUG: Bug in usage of ring_buf somewhere
         // NOTE: Potentially change this to a semaphore given from ISR, where ISR checks ring_buf_size?
-        if ((ring_buf_size_get(&imu_ring_buf) / IMU_DATA_WORD_SIZE) > IMU_ODR) {
+        // if ((ring_buf_size_get(&imu_ring_buf) / IMU_DATA_WORD_SIZE) > IMU_ODR) {
             
-            ring_buf_get_claim(&imu_ring_buf, (uint8_t **)&data, 
-                    IMU_ODR * IMU_DATA_WORD_SIZE);
+        //     ring_buf_get_claim(&imu_ring_buf, (uint8_t **)&data, 
+        //             IMU_ODR * IMU_DATA_WORD_SIZE);
 
-            // TODO: process claimed data
+        //     // TODO: process claimed data
 
-            ring_buf_get_finish(&imu_ring_buf, IMU_ODR * IMU_DATA_WORD_SIZE);
+        //     ring_buf_get_finish(&imu_ring_buf, IMU_ODR * IMU_DATA_WORD_SIZE);
 
-            /* Send current activity */
-            while (k_msgq_put(&activity_msgq, &activity, K_NO_WAIT) != 0) {
-                /* message queue is full: purge old data & try again */
-                k_msgq_purge(&activity_msgq);
-                LOG_DBG("activity_msgq has been purged");
-            }
+        //     /* Send current activity */
+        //     while (k_msgq_put(&activity_msgq, &activity, K_NO_WAIT) != 0) {
+        //         /* message queue is full: purge old data & try again */
+        //         k_msgq_purge(&activity_msgq);
+        //         LOG_DBG("activity_msgq has been purged");
+        //     }
 
-            k_event_post(&data_events, ACTIVITY_DATA_PENDING);
-        } else {
-            k_msleep(20);
-        }
+        //     // k_event_post(&data_events, ACTIVITY_DATA_PENDING);
+        // } else {
+        //     k_msleep(20);
+        // }
 
+        k_msleep(20);
         
     }
 }

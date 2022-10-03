@@ -39,19 +39,12 @@ void accumulator_thread(void *a, void *b, void *c)
 
     while (1) {
         /* Wait for all data to be ready */
-        k_event_wait_all(&data_events, ENVIRON_DATA_PENDING | 
-                ACTIVITY_DATA_PENDING | LOCATION_DATA_PENDING, true, 
-                K_FOREVER);
+        k_event_wait_all(&data_events, ENVIRON_DATA_PENDING |
+                LOCATION_DATA_PENDING, true, K_FOREVER);
 
         err = k_msgq_get(&environ_data_msgq, &sys_data.environ, K_NO_WAIT);
         if (err != 0) {
             LOG_ERR("environ data receive error: %d", err);
-            continue;
-        }
-
-        err = k_msgq_get(&activity_msgq, &sys_data.activity, K_NO_WAIT);
-        if (err != 0) {
-            LOG_ERR("activity receive error: %d", err);
             continue;
         }
 
