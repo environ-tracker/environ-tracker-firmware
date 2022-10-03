@@ -31,8 +31,9 @@ K_EVENT_DEFINE(data_events);
 void accumulator_thread(void *a, void *b, void *c)
 {
     struct system_data sys_data = {0};
-    int err;
     bool lorawan = true;
+    int err;
+    
 
     LOG_INF("Accumulator started");
 
