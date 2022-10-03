@@ -92,6 +92,7 @@ struct rv3028_control1 {
     uint8_t eeprom_refresh_disable : 1;
     uint8_t update_int_select : 1;
     uint8_t date_alm_select : 1;
+    uint8_t nimp : 1;
     uint8_t timer_repeat_select : 1;
 } __packed;
 
