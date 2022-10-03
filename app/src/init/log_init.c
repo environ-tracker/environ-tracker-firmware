@@ -22,6 +22,9 @@ int log_filter_init(const struct device *dev)
     uint32_t set_level;
 
     backend = log_backend_get_by_name("log_backend_fs");
+    if (backend == NULL) {
+        return -1;
+    }
     
     for (int i = 0; i < log_src_cnt_get(CONFIG_LOG_DOMAIN_ID); ++i) {
         set_level = log_filter_set(backend, CONFIG_LOG_DOMAIN_ID, i, 
