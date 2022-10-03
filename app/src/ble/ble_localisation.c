@@ -55,6 +55,9 @@ K_MEM_SLAB_DEFINE_STATIC(ibeacon_mem, sizeof(struct ibeacon_packet),
 /* Message queue to pass ibeacon packets to ibeacon filter */
 K_MSGQ_DEFINE(ibeacon_msgq, sizeof(struct ibeacon_packet), 30, 4);
 
+/* Mesage queue to request location data for ibeacon from server */
+K_MSGQ_DEFINE(ibeacon_request_msgq, sizeof(struct ibeacon), 30, 4);
+
 /**
  * @brief Empties the ibeacon_list
  * 
@@ -229,7 +232,7 @@ static bool parse_ad(struct bt_data *data, void *user_data)
 static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type, 
         struct net_buf_simple *ad)
 {
-    struct ibeacon_packet *beacon_data, beacon_data_tmp;
+    struct ibeacon_packet *beacon_data, beacon_data_tmp = {0};
     struct timespec discovered_time;
 
     beacon_data = &beacon_data_tmp;

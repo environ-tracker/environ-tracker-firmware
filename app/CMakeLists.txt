@@ -26,7 +26,6 @@ include_directories(inc inc/file inc/ble inc/network)
 target_sources(app 
     PRIVATE 
         ${proto_sources}
-        src/ble/ble_localisation.c
         src/shell.c 
         src/environ.c 
         src/imu.c 
@@ -41,4 +40,5 @@ target_sources(app
         src/init/time_init.c
         src/network/lorawan.c
         src/network/encode_pb.c
+        src/ble/ble_localisation.c
 )

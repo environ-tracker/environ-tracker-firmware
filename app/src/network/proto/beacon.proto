@@ -1,25 +1,17 @@
-synatx = "proto3";
+syntax = "proto3";
 
 message BeaconID {
-    bytes network_uuid;
-    uint32 beacon_id;
-}
-
-message Request {
-    repeated BeaconID beacons;
+    bytes network_uuid = 1;
+    uint32 beacon_id = 2;
 }
 
 message Location {
-    uint32 latitude;
-    uint32 longitude;
-    uint32 altitude;
+    uint32 latitude = 1;
+    uint32 longitude = 2;
+    uint32 altitude = 3;
 }
 
 message BeaconResponse {
-    BeaconID id;
-    Location location;
-}
-
-message Response {
-    repeated BeaconResponse beacons;
+    BeaconID id = 1;
+    Location location = 2;
 }

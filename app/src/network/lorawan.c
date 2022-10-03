@@ -4,6 +4,8 @@
 #include <logging/log.h>
 
 #include "accumulator.h"
+#include "ble_localisation.h"
+#include "ble/ble_network.h"
 #include "encode_pb.h"
 #include "src/network/proto/upload_data.pb.h"
 
@@ -20,15 +22,22 @@ BUILD_ASSERT(DT_NODE_HAS_STATUS(DEFAULT_RADIO_NODE, okay),
 #define LORAWAN_JOIN_EUI    {0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 
 #define LORAWAN_APP_KEY     {0xad, 0x16, 0x8e, 0xb9, 0x0f, 0xc2, 0x4b, 0x7e,\
-							0x97, 0x7e, 0x88, 0xd8, 0x7e, 0x04, 0xb8, 0x74}
+							 0x97, 0x7e, 0x88, 0xd8, 0x7e, 0x04, 0xb8, 0x74}
 
 #define LORAWAN_BACKEND_STACK_SIZE  2048
 #define LORAWAN_BACKEND_PRIORITY    7
 
 
+static struct k_poll_event events[] = {
+    K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_MSGQ_DATA_AVAILABLE,
+            K_POLL_MODE_NOTIFY_ONLY, &lorawan_msgq, 0),
+    K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_MSGQ_DATA_AVAILABLE, 
+            K_POLL_MODE_NOTIFY_ONLY, &ibeacon_request_msgq, 0),
+};
+
+
 static void dl_callback(uint8_t port, bool data_pending,
-            int16_t rssi, int8_t snr,
-            uint8_t len, const uint8_t *data)
+        int16_t rssi, int8_t snr, uint8_t len, const uint8_t *data)
 {
     LOG_INF("Port %d, Pending %d, RSSI %ddB, SNR %ddBm", port, data_pending, rssi, snr);
     if (data) {
@@ -52,6 +61,7 @@ void lorawan_backend(void *a, void *b, void *c)
     size_t data_len;
 
     struct system_data sys_data = {0};
+    struct ibeacon ibeacon = {0};
 
     
     /* Get device pointer for LoRa transceiver */
@@ -94,53 +104,69 @@ void lorawan_backend(void *a, void *b, void *c)
         },
     };
 
-    /* Join LoRaWAN network */
-    LOG_INF("Joining network over OTAA");
-    ret = lorawan_join(&join_cfg);
-    if (ret < 0) {
-        LOG_ERR("lorawan_join failed: %d", ret);
-        return;
-    }
+    uint8_t attempts = 0;
+    do {
+        /* Join LoRaWAN network */
+        LOG_INF("Joining network over OTAA");
+        ret = lorawan_join(&join_cfg);
+        if (ret < 0) {
+            LOG_WRN("lorawan_join failed: %d", ret);
+        
+            if (++attempts > 5) {
+                LOG_ERR("Failed to join LoRaWAN network after %d attempts. "
+                        "Exiting.", attempts);
+                return;
+            }
+            k_sleep(K_SECONDS(30));
+        }
+    } while (ret != 0);
 
 
     while (1) {
-        ret = k_msgq_get(&lorawan_msgq, &sys_data, K_FOREVER);
-        if (ret == 0) {
-            LOG_INF("sys_data received, timestamp: %d", sys_data.timestamp);
+        ret = k_poll(events, 2, K_FOREVER);
+        if (ret != 0) {
+            continue;
+        }
 
-            if (!encode_message(tx_buffer, sizeof(tx_buffer), &data_len, 
-                    &sys_data)) {
-                k_msleep(5000); 
-                continue;    
-            } 
-
-            LOG_INF("data encoded successfully, using %d bytes, sending...", 
-                    data_len);
-            ret = lorawan_send(2, tx_buffer, data_len, 
-                    LORAWAN_MSG_CONFIRMED);
-
-            /*
-             * Note: The stack may return -EAGAIN if the provided data
-             * length exceeds the maximum possible one for the region and
-             * datarate. But since we are just sending the same data here,
-             * we'll just continue.
-             */
-            if (ret == -EAGAIN) {
-                LOG_ERR("lorawan_send failed: %d. Continuing...", ret);
-                k_sleep(K_MSEC(10000));
-                continue;
-            } else if (ret < 0) {
-                LOG_ERR("lorawan_send failed: %d", ret);
-                k_msleep(5000);
+        if (events[0].state == K_POLL_STATE_MSGQ_DATA_AVAILABLE) {
+            /* Receive and encode system data */
+            ret = k_msgq_get(&lorawan_msgq, &sys_data, K_MSEC(10));
+            if (ret) {
                 continue;
             }
 
-            LOG_INF("Data sent!");
+            if (!encode_sys_data_message(tx_buffer, sizeof(tx_buffer), 
+                    &data_len, &sys_data)) {
+                continue;
+            }
+        } else if (events[1].state == K_POLL_STATE_MSGQ_DATA_AVAILABLE) {
+            /* Request ibeacon location data */
+            ret = k_msgq_get(&ibeacon_request_msgq, &ibeacon, K_MSEC(10));
+            if (ret) {
+                continue;
+            }
+
+            if (!encode_ibeacon_request_message(tx_buffer, sizeof(tx_buffer), 
+                    &data_len, &ibeacon)) {
+                continue;
+            }
         } else {
-            LOG_ERR("message queue receive error: %d", ret);
+            continue;
         }
-    
-        k_sleep(K_MSEC(10000));
+
+        LOG_INF("data encoded successfully, using %d bytes, sending...", 
+                data_len);
+        ret = lorawan_send(2, tx_buffer, data_len, LORAWAN_MSG_CONFIRMED);
+
+        if (ret < 0) {
+            LOG_ERR("lorawan_send failed: %d", ret);
+            k_sleep(K_MINUTES(1));
+            continue;
+        }
+
+        LOG_INF("Data sent!");
+        
+        k_sleep(K_MINUTES(5));
     }
 }
 

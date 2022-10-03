@@ -4,13 +4,14 @@
 #include <logging/log.h>
 
 #include "src/network/proto/upload_data.pb.h"
+// #include "src/network/proto/beacon.pb.h"
 #include "accumulator.h"
 
 LOG_MODULE_DECLARE(lorawan_backend);
 
 
-bool encode_message(uint8_t *buffer, size_t buffer_size, size_t *message_len, 
-        struct system_data *data)
+bool encode_sys_data_message(uint8_t *buffer, size_t buffer_size, 
+        size_t *message_len, struct system_data *data)
 {
     EnvironTrackerUpload message = EnvironTrackerUpload_init_zero;
 
@@ -40,4 +41,11 @@ bool encode_message(uint8_t *buffer, size_t buffer_size, size_t *message_len,
     }
 
     return status;
+}
+
+// TODO: implement
+bool encode_ibeacon_request_message(uint8_t *buffer, size_t buffer_size,
+        size_t *message_len, struct ibeacon *data)
+{
+    return false;   
 }
