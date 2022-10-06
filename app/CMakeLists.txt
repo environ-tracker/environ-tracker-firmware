@@ -32,7 +32,6 @@ target_sources(app
         src/accumulator.c
         src/file/file_init.c
         src/file/file_common.c
-        src/ble/ble_helpers.c
         src/ble/ble_network.c
         src/controller.c
         src/init/gpio_init.c
