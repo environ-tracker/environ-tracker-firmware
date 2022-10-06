@@ -129,7 +129,7 @@ void lorawan_backend(void *a, void *b, void *c)
         }
 
         if (events[0].state == K_POLL_STATE_MSGQ_DATA_AVAILABLE) {
-            events[0].state == K_POLL_STATE_NOT_READY;
+            events[0].state = K_POLL_STATE_NOT_READY;
 
             /* Receive and encode system data */
             ret = k_msgq_get(&lorawan_msgq, &sys_data, K_MSEC(10));
@@ -142,7 +142,7 @@ void lorawan_backend(void *a, void *b, void *c)
                 continue;
             }
         } else if (events[1].state == K_POLL_STATE_MSGQ_DATA_AVAILABLE) {
-            events[1].state == K_POLL_STATE_NOT_READY;
+            events[1].state = K_POLL_STATE_NOT_READY;
 
             /* Request ibeacon location data */
             ret = k_msgq_get(&ibeacon_request_msgq, &ibeacon, K_MSEC(10));
