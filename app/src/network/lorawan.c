@@ -164,7 +164,7 @@ void lorawan_backend(void *a, void *b, void *c)
 
         if (ret < 0) {
             LOG_ERR("lorawan_send failed: %d", ret);
-            k_sleep(K_SECONDS(30)));
+            k_sleep(K_SECONDS(30));
             continue;
         }
 
