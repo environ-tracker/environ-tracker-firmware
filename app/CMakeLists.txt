@@ -27,17 +27,17 @@ target_sources(app
     PRIVATE 
         ${proto_sources}
         src/shell.c 
+        src/controller.c
+        src/accumulator.c
         src/environ.c 
         src/imu.c 
-        src/accumulator.c
-        src/file/file_init.c
-        src/file/file_common.c
-        src/ble/ble_network.c
-        src/controller.c
         src/init/gpio_init.c
         src/init/log_init.c
         src/init/time_init.c
+        src/file/file_init.c
+        src/file/file_common.c
         src/network/lorawan.c
         src/network/encode_pb.c
+        src/ble/ble_network.c
         src/ble/ble_localisation.c
 )
