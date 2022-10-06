@@ -288,31 +288,31 @@ void ble_localisation(void *a, void *b, void *c)
     while (1) {
         k_msleep(SCAN_PERIOD);
 
-        LOG_WRN("Scan period elapsed. Missed scans %d", missed_scans);
+        // LOG_WRN("Scan period elapsed. Missed scans %d", missed_scans);
 
         /* If enough beacons have been found then run the localisation algo */
         beacons_found = k_mem_slab_num_used_get(&ibeacon_mem);
-        if (beacons_found < 3) {
-            ++missed_scans;
+        // if (beacons_found < 3) {
+        //     ++missed_scans;
 
-            /* Missed too many scans. Stop scanning for 10 minutes */
-            if (missed_scans >= MAX_MISSED_SCAN_PERIODS) {
+        //     /* Missed too many scans. Stop scanning for 10 minutes */
+        //     if (missed_scans >= MAX_MISSED_SCAN_PERIODS) {
 
-                bt_le_scan_stop();
+        //         bt_le_scan_stop();
 
-                /* Scanning stopped, so empty the list */
-                empty_ibeacon_list();
+        //         /* Scanning stopped, so empty the list */
+        //         empty_ibeacon_list();
 
-                LOG_INF("Missed %d scanning periods, stopped iBeacon "
-                        "scanning and suspending", missed_scans);
+        //         LOG_INF("Missed %d scanning periods, stopped iBeacon "
+        //                 "scanning and suspending", missed_scans);
 
-                k_sleep(K_MINUTES(10));
+        //         k_sleep(K_MINUTES(10));
 
-                bt_le_scan_start(&scan_params, scan_cb);
+        //         bt_le_scan_start(&scan_params, scan_cb);
 
-                missed_scans = 0;
-            }
-        } else {
+        //         missed_scans = 0;
+        //     }
+        // } else {
             missed_scans = 0;
 
             k_mutex_lock(&ibeacon_list_mutex, K_MSEC(1));
@@ -343,7 +343,7 @@ void ble_localisation(void *a, void *b, void *c)
             }
 
             k_event_post(&data_events, LOCATION_DATA_PENDING);
-        }
+        // }
     }
 }
 
