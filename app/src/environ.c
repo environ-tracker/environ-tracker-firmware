@@ -9,19 +9,6 @@
 LOG_MODULE_REGISTER(environ_fetch);
 
 
-/* Check if the board has the required sensors */
-#if !DT_HAS_COMPAT_STATUS_OKAY(bosch_bme680)
-#error "Unsupported board: bosch,bme680 not enabled on devicetree"
-#endif
-
-#if !DT_HAS_COMPAT_STATUS_OKAY(silabs_si1132)
-#error "Unsupported board: silabs,si1132 not enabled on devicetree"
-#endif
-
-
-#define BME680_NODE DT_LABEL(DT_COMPAT_GET_ANY_STATUS_OKAY(bosch_bme680))
-#define SI1132_NODE DT_LABEL(DT_COMPAT_GET_ANY_STATUS_OKAY(silabs_si1132))
-
 #define ENVIRON_STACK_SIZE  500
 #define ENVIRON_PRIORITY    5
 
@@ -38,12 +25,14 @@ void environ_fetch_thread(void *a, void *b, void *c)
 {
     struct environ_data data = {0};
 
-    const struct device *bme680_dev = device_get_binding(BME680_NODE);
-    const struct device *si1132_dev = device_get_binding(SI1132_NODE);
+    const struct device *bme680_dev = DEVICE_DT_GET_ONE(bosch_bme680);
+    const struct device *si1132_dev = DEVICE_DT_GET_ONE(silabs_si1132);
 
-    if (bme680_dev == NULL || si1132_dev == NULL) {
-        LOG_ERR("No %s device found, exiting thread", 
-                (bme680_dev) ? "Si1132" : "BME680");
+    if (!device_is_ready(bme680_dev)) {
+        LOG_ERR("%s: device not ready.", bme680_dev->name);
+        return;
+    } else if (!device_is_ready(si1132_dev)) {
+        LOG_ERR("%s: device not ready.", si1132_dev->name);         
         return;
     }
 

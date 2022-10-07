@@ -12,10 +12,6 @@
 
 LOG_MODULE_REGISTER(lorawan_backend, LOG_LEVEL_INF);
 
-#define DEFAULT_RADIO_NODE DT_ALIAS(lora0)
-BUILD_ASSERT(DT_NODE_HAS_STATUS(DEFAULT_RADIO_NODE, okay),
-        "No default LoRa radio specified in DT");
-#define DEFAULT_RADIO DT_LABEL(DEFAULT_RADIO_NODE)
 
 #define LORAWAN_DEV_EUI     {0x71, 0xb3, 0xd5, 0x7e, 0xd0, 0x05, 0x07, 0x43}
 
@@ -65,9 +61,9 @@ void lorawan_backend(void *a, void *b, void *c)
 
     
     /* Get device pointer for LoRa transceiver */
-    const struct device *lora_dev = device_get_binding(DEFAULT_RADIO);
-    if (!lora_dev) {
-        LOG_ERR("%s Device not found", DEFAULT_RADIO);
+    const struct device *lora_dev = DEVICE_DT_GET(DT_ALIAS(lora0));
+    if (!device_is_ready(lora_dev)) {
+        LOG_ERR("%s: device not ready.", lora_dev->name);
         return;
     }
 

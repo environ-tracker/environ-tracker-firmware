@@ -13,9 +13,6 @@ LOG_MODULE_REGISTER(gnss, CONFIG_LOG_DEFAULT_LEVEL);
 #define GNSS_STACK_SIZE 1024
 #define GNSS_PRIORITY   5
 
-/* Node of ZOE-M8Q's UART */
-#define ZOE_UART    DT_NODELABEL(uart1)
-
 /* Maximum NMEA message size */
 #define NMEA_MAX_MSG_SIZE 256
 
@@ -23,7 +20,7 @@ LOG_MODULE_REGISTER(gnss, CONFIG_LOG_DEFAULT_LEVEL);
 K_MSGQ_DEFINE(uart_msgq, NMEA_MAX_MSG_SIZE, 10, 4);
 
 /* UART device for ZOE-M8Q GPS */
-static const struct device *zoe_uart_dev = DEVICE_DT_GET(ZOE_UART);
+static const struct device *zoe_uart_dev = DEVICE_DT_GET(DT_NODELABEL(uart1));
 
 /* Receive buffer used in UART ISR callback */
 static char rx_buf[NMEA_MAX_MSG_SIZE];
@@ -74,10 +71,9 @@ void gnss_thread(void *a, void *b, void *c)
 
     LOG_INF("GNSS thread started");
 
-
 	/* Check if GNSS receiver UART is enabled */
     if (!device_is_ready(zoe_uart_dev)) {
-		printk("UART device not found!");
+		LOG_ERR("%s: GNSS UART device not ready.", zoe_uart_dev->name);
 		return;
 	}
 

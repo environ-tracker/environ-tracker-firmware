@@ -11,12 +11,6 @@
 LOG_MODULE_REGISTER(imu);
 
 
-#if !DT_HAS_COMPAT_STATUS_OKAY(st_lsm6dso)
-#error "Unsupported board: st,lsm6dso not enabled on devicetree"
-#endif
-
-#define IMU_NODE DT_LABEL(DT_COMPAT_GET_ANY_STATUS_OKAY(st_lsm6dso))
-
 #define IMU_STACK_SIZE  500
 #define IMU_PRIORITY    4
 
@@ -94,9 +88,10 @@ void imu_thread(void *a, void *b, void *c)
         .val2 = 0
     };
     
-    const struct device *imu_dev = device_get_binding(IMU_NODE);
-    if (imu_dev == NULL) {
-        LOG_ERR("No device %s found.", IMU_NODE);
+    const struct device *imu_dev = DEVICE_DT_GET_ONE(st_lsm6dso);
+    
+    if (!device_is_ready(imu_dev)) {
+        LOG_ERR("%s: device not ready.", imu_dev->name);
         return;
     }
 

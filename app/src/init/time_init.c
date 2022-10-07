@@ -7,11 +7,6 @@
 
 LOG_MODULE_DECLARE(init);
 
-#if !DT_HAS_COMPAT_STATUS_OKAY(microcrystal_rv3028)
-#error "Unsupported board: microcrystal,rv3028 not enabled on devicetree"
-#endif
-
-#define RTC_NODE DT_LABEL(DT_COMPAT_GET_ANY_STATUS_OKAY(microcrystal_rv3028))
 
 #define TIME_INIT_INIT_PRIORITY 95
 #if TIME_INIT_INIT_PRIORITY < CONFIG_SENSOR_INIT_PRIORITY
@@ -27,13 +22,14 @@ LOG_MODULE_DECLARE(init);
  */
 int time_init(const struct device *dev)
 {
-    const struct device *rtc_dev = device_get_binding(RTC_NODE);
     struct timespec time = {0};
     time_t unix_time = 0;
     int rc;
 
-    if (rtc_dev == NULL) {
-        LOG_ERR("time_init: No RV3028 RTC device found.");
+    const struct device *rtc_dev = DEVICE_DT_GET_ONE(microcrystal_rv3028);
+
+    if (!device_is_ready(rtc_dev)) {
+        LOG_ERR("time_init: %s device not ready.", rtc_dev->name);
         return -ENODEV;
     }
 
