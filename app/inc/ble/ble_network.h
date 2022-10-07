@@ -1,9 +1,9 @@
 #ifndef BLE_NETWORK_H
 #define BLE_NETWORK_H
 
-#include <kernel.h>
-#include <posix/time.h>
-#include <bluetooth/uuid.h>
+#include <zephyr/kernel.h>
+#include <zephyr/posix/time.h>
+#include <zephyr/bluetooth/uuid.h>
 
 #include "location.h"
 

@@ -1,6 +1,6 @@
-#include <zephyr.h>
+#include <zephyr/kernel.h>
 #include <pb_decode.h>
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 
 #include "src/network/proto/beacon.pb.h"
 #include "ble/ble_network.h"

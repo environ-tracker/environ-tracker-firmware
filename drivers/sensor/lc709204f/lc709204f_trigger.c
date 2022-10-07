@@ -1,8 +1,8 @@
-#include <kernel.h>
-#include <drivers/sensor.h>
-#include <drivers/gpio.h>
+#include <zephyr/kernel.h>
+#include <zephyr/drivers/sensor.h>
+#include <zephyr/drivers/gpio.h>
 
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(lc709204f, CONFIG_SENSOR_LOG_LEVEL);
 
 #include "lc709204f.h"

@@ -1,10 +1,10 @@
-#include <zephyr.h>
-#include <shell/shell.h>
+#include <zephyr/kernel.h>
+#include <zephyr/shell/shell.h>
 #include <version.h>
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 #include <stdlib.h>
-#include <drivers/uart.h>
-#include <drivers/gpio.h>
+#include <zephyr/drivers/uart.h>
+#include <zephyr/drivers/gpio.h>
 
 LOG_MODULE_REGISTER(app_shell);
 

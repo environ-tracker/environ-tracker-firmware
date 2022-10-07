@@ -1,7 +1,7 @@
 #ifndef LOCATION_H
 #define LOCATION_H
 
-#include <zephyr.h>
+#include <zephyr/kernel.h>
 
 /**
  * @brief A location in 1e7 degrees

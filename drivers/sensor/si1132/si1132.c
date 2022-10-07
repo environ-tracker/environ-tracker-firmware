@@ -1,14 +1,14 @@
-#include <kernel.h>
-#include <device.h>
-#include <init.h>
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/init.h>
 #include <string.h>
-#include <sys/byteorder.h>
-#include <sys/__assert.h>
-#include <logging/log.h>
-#include <drivers/i2c.h>
+#include <zephyr/sys/byteorder.h>
+#include <zephyr/sys/__assert.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/drivers/i2c.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <drivers/sensor.h>
+#include <zephyr/drivers/sensor.h>
 
 #include "si1132.h"
 

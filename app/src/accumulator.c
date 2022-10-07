@@ -1,5 +1,5 @@
-#include <zephyr.h>
-#include <logging/log.h>
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 
 #include "accumulator.h"
 #include "environ.h"
@@ -55,7 +55,7 @@ void accumulator_thread(void *a, void *b, void *c)
             continue;
         }
 
-        LOG_WRN("all msgq read");
+        // LOG_WRN("all msgq read");
 
 
         if (lorawan) {

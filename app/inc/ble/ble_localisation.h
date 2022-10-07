@@ -1,7 +1,7 @@
 #ifndef BLE_LOCALISATION_H
 #define BLE_LOCALISATION_H
 
-#include <zephyr.h>
+#include <zephyr/kernel.h>
 
 extern const k_tid_t ble_localisation_id;
 

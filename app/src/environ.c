@@ -1,7 +1,7 @@
-#include <zephyr.h>
-#include <device.h>
-#include <drivers/sensor.h>
-#include <logging/log.h>
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/sensor.h>
+#include <zephyr/logging/log.h>
 
 #include "environ.h"
 #include "accumulator.h"

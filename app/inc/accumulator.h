@@ -1,7 +1,7 @@
 #ifndef ACCUMULATOR_H
 #define ACCUMULATOR_H
 
-#include <zephyr.h>
+#include <zephyr/kernel.h>
 
 #include "environ.h"
 #include "ble_network.h"

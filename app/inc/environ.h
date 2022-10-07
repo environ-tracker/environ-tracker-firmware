@@ -1,8 +1,8 @@
 #ifndef ENVIRON_H
 #define ENVIRON_H
 
-#include <zephyr.h>
-#include <drivers/sensor.h>
+#include <zephyr/kernel.h>
+#include <zephyr/drivers/sensor.h>
 
 struct environ_data {
     struct sensor_value temp;

@@ -1,9 +1,9 @@
-#include <zephyr.h>
-#include <device.h>
-#include <posix/time.h>
-#include <drivers/counter.h>
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/posix/time.h>
+#include <zephyr/drivers/counter.h>
 
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 
 LOG_MODULE_DECLARE(init);
 

@@ -1,15 +1,14 @@
 #include "ble_localisation.h"
 
-#include <zephyr.h>
-#include <kernel.h>
-#include <posix/time.h>
-#include <sys/byteorder.h>
+#include <zephyr/kernel.h>
+#include <zephyr/posix/time.h>
+#include <zephyr/sys/byteorder.h>
 
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/hci.h>
-#include <bluetooth/uuid.h>
+#include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/hci.h>
+#include <zephyr/bluetooth/uuid.h>
 
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 
 #include "accumulator.h"
 #include "location.h"

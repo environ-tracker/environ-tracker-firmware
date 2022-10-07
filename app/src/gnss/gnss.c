@@ -1,7 +1,7 @@
-#include <zephyr.h>
-#include <device.h>
-#include <drivers/uart.h>
-#include <logging/log.h>
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/uart.h>
+#include <zephyr/logging/log.h>
 
 #include "gnss.h"
 

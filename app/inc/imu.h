@@ -1,8 +1,8 @@
 #ifndef IMU_H
 #define IMU_H
 
-#include <zephyr.h>
-#include <drivers/sensor.h>
+#include <zephyr/kernel.h>
+#include <zephyr/drivers/sensor.h>
 
 enum activity {
     ACTIVITY_UNDEFINED = 0,

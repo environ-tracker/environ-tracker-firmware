@@ -1,7 +1,7 @@
-#include <zephyr.h>
-#include <device.h>
-#include <logging/log.h>
-#include <logging/log_ctrl.h>
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/logging/log_ctrl.h>
 
 LOG_MODULE_REGISTER(init);
 

@@ -1,7 +1,7 @@
-#include <device.h>
-#include <lorawan/lorawan.h>
-#include <zephyr.h>
-#include <logging/log.h>
+#include <zephyr/device.h>
+#include <zephyr/lorawan/lorawan.h>
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 
 #include "accumulator.h"
 #include "ble_localisation.h"

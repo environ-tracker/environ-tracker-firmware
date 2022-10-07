@@ -1,4 +1,4 @@
-#include <fs/fs.h>
+#include <zephyr/fs/fs.h>
 
 
 #define FILE_NAME_LEN CONFIG_FILE_SYSTEM_MAX_FILE_NAME

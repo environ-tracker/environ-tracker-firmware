@@ -1,5 +1,5 @@
-#include <zephyr.h>
-#include <logging/log.h>
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 
 #include "file/file_common.h"
 #include "file/file_init.h"

@@ -1,7 +1,7 @@
-#include <zephyr.h>
-#include <drivers/sensor.h>
+#include <zephyr/kernel.h>
+#include <zephyr/drivers/sensor.h>
 #include <pb_encode.h>
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 
 #include "src/network/proto/upload_data.pb.h"
 // #include "src/network/proto/beacon.pb.h"

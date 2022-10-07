@@ -1,10 +1,10 @@
-#include <drivers/i2c.h>
-#include <sys/byteorder.h>
-#include <sys/crc.h>
+#include <zephyr/drivers/i2c.h>
+#include <zephyr/sys/byteorder.h>
+#include <zephyr/sys/crc.h>
 
 #include "lc709204f.h"
 
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(lc709204f);
 
 /**

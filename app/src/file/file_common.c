@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <string.h>
-#include <fs/fs.h>
+#include <zephyr/fs/fs.h>
 #include <zephyr/fs/littlefs.h>
 
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(file, LOG_LEVEL_INF);
 
 #include "file/file_common.h"

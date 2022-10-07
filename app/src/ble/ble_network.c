@@ -1,10 +1,10 @@
-#include <kernel.h>
+#include <zephyr/kernel.h>
 #include <stdio.h>
 #include <string.h>
-#include <posix/time.h>
-#include <bluetooth/uuid.h>
-#include <fs/fs.h>
-#include <logging/log.h>
+#include <zephyr/posix/time.h>
+#include <zephyr/bluetooth/uuid.h>
+#include <zephyr/fs/fs.h>
+#include <zephyr/logging/log.h>
 
 #include "ble/ble_network.h"
 #include "file/file_common.h"

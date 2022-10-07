@@ -8,9 +8,6 @@ compatible: "semtech,sx1508b"
 include: [i2c-device.yaml, gpio-controller.yaml]
 
 properties:
-    label:
-      required: true
-
     "#gpio-cells":
       const: 2
 
