@@ -49,7 +49,6 @@
 
     daughter_pwr_ctrl: daughter-vdd-pwr-ctrl {
         compatible = "regulator-fixed";
-        label = "daughter-pwr-ctrl";
         regulator-name = "daughter-pwr-ctrl";
         enable-gpios = <&sx1508b 4 GPIO_ACTIVE_HIGH>;
         regulator-boot-on;
@@ -66,7 +65,6 @@
     sx1508b: sx1508b@20 {
         compatible = "semtech,sx1508b";
         reg = <0x20>;
-        label = "GPIO_CTRL";
         gpio-controller;
         #gpio-cells = <2>;
         ngpios = <8>;
@@ -79,14 +77,12 @@
     bme680: bme680@76 {
         compatible = "bosch,bme680";
         reg = <0x76>;
-        label = "BME680";
         vin-supply = <&daughter_pwr_ctrl>;
     };
 
     lsm6dso: lsm6dso@6a {
         compatible = "st,lsm6dso";
         reg = <0x6a>;
-        label = "LSM6DSO";
         accel-pm = <1>;
         accel-range = <0>;
         accel-odr = <3>;
@@ -99,20 +95,17 @@
     lis3mdl: lis3mdl@1c {
         compatible = "st,lis3mdl-magn";
         reg = <0x1c>;
-        label = "LIS3MDL";
     };
 
     si1132: si1132@60 {
         compatible = "silabs,si1132";
         reg = <0x60>;
-        label = "Si1132";
         vin-supply = <&daughter_pwr_ctrl>;
     };
 
     ssd1306: ssd1306@3c {
         compatible = "solomon,ssd1306fb";
         reg = <0x3c>;
-        label = "SSD1306";
         vin-supply = <&daughter_pwr_ctrl>;
         height = <32>;
         width = <128>;
