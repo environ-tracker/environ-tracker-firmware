@@ -40,4 +40,5 @@ target_sources(app
         src/network/encode_pb.c
         src/ble/ble_network.c
         src/ble/ble_localisation.c
+        src/gnss.c
 )
