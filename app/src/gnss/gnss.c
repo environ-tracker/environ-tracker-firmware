@@ -3,6 +3,8 @@
 #include <drivers/uart.h>
 #include <logging/log.h>
 
+#include "gnss.h"
+
 
 LOG_MODULE_REGISTER(gnss, CONFIG_LOG_DEFAULT_LEVEL);
 
@@ -26,6 +28,9 @@ static const struct device *zoe_uart_dev = DEVICE_DT_GET(ZOE_UART);
 /* Receive buffer used in UART ISR callback */
 static char rx_buf[NMEA_MAX_MSG_SIZE];
 static int rx_buf_pos;
+
+/* Controls behaviour of the GNSS module */
+K_EVENT_DEFINE(gnss_control_events);
 
 
 /*
@@ -64,17 +69,19 @@ void serial_cb(const struct device *dev, void *user_data)
 void gnss_thread(void *a, void *b, void *c)
 {
     char tx_buf[NMEA_MAX_MSG_SIZE];
+	bool debug_output_enable = false;
 
 
     LOG_INF("GNSS thread started");
 
 
+	/* Check if GNSS receiver UART is enabled */
     if (!device_is_ready(zoe_uart_dev)) {
 		printk("UART device not found!");
 		return;
 	}
 
-    /* configure interrupt and callback to receive data */
+    /* Configure interrupt and callback to receive data */
 	uart_irq_callback_user_data_set(zoe_uart_dev, serial_cb, NULL);
 	uart_irq_rx_enable(zoe_uart_dev);
 
@@ -82,10 +89,25 @@ void gnss_thread(void *a, void *b, void *c)
     LOG_INF("ZOE-M8Q UART setup");
 
     while (1) {
-        while (k_msgq_get(&uart_msgq, &tx_buf, K_FOREVER) == 0) {
-            // TODO: parse NMEA sentences
+		/* Check if debug output enable should be toggled */
+		if (k_event_wait(&gnss_control_events, GNSS_TOGGLE_DEBUG_OUTPUT, 
+				false, K_NO_WAIT)) {
+			debug_output_enable = !debug_output_enable;
 
-            printk("%s", tx_buf);
+			LOG_WRN("Got event. Debug_enable is: %s", (debug_output_enable) ? "on" : "off");
+
+			/* Clear the event */
+			k_event_set_masked(&gnss_control_events, 0, 
+					GNSS_TOGGLE_DEBUG_OUTPUT);
+		}
+
+        while (k_msgq_get(&uart_msgq, &tx_buf, K_MSEC(50)) == 0) {
+			if (debug_output_enable) {
+				printk("%s", tx_buf);
+			}
+            
+
+			// TODO: parse NMEA sentences
         }
     }
 }
