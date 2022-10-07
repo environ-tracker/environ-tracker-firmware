@@ -90,8 +90,6 @@ void gnss_thread(void *a, void *b, void *c)
 				false, K_NO_WAIT)) {
 			debug_output_enable = !debug_output_enable;
 
-			LOG_WRN("Got event. Debug_enable is: %s", (debug_output_enable) ? "on" : "off");
-
 			/* Clear the event */
 			k_event_set_masked(&gnss_control_events, 0, 
 					GNSS_TOGGLE_DEBUG_OUTPUT);
