@@ -4,8 +4,9 @@
 #include <zephyr/kernel.h>
 
 #include "environ.h"
-#include "ble_network.h"
+// #include "ble_network.h"
 #include "imu.h"
+#include "location.h"
 
 
 #define ENVIRON_DATA_PENDING    1 << 0
@@ -13,16 +14,10 @@
 #define LOCATION_DATA_PENDING   1 << 2
 
 
-enum location_source {
-    LOCATION_BLE = 0,
-    LOCATION_GNSS,
-};
-
 struct system_data {
     uint32_t timestamp;
     struct environ_data environ;
-    enum location_source location_source;
-    struct location location;
+    struct location_wrapper location;
     enum activity activity;
 };
 

@@ -20,10 +20,10 @@ bool encode_sys_data_message(uint8_t *buffer, size_t buffer_size,
     message.activity = data->activity;
     
     message.has_location = true;
-    message.location.location_source = data->location_source;
-    message.location.latitude = data->location.latitude;
-    message.location.longitude = data->location.longitude;
-    message.location.altitude = data->location.altitude;
+    message.location.location_source = data->location.source;
+    message.location.latitude = data->location.location.latitude;
+    message.location.longitude = data->location.location.longitude;
+    message.location.altitude = data->location.location.altitude;
     
     // TODO: Correctly format data here
     message.has_environ = true;

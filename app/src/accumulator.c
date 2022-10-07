@@ -5,7 +5,7 @@
 #include "environ.h"
 #include "imu.h"
 #include "location.h"
-
+#include "gnss.h"
 
 LOG_MODULE_REGISTER(accumulator);
 
@@ -55,11 +55,10 @@ void accumulator_thread(void *a, void *b, void *c)
             continue;
         }
 
-        // LOG_WRN("all msgq read");
+        LOG_INF("all msgq read. location source: %d", sys_data.location.source);
 
 
         if (lorawan) {
-            sys_data.location_source = LOCATION_BLE;
 
             // Send to lorawan_thread
             while (k_msgq_put(&lorawan_msgq, &sys_data, K_MSEC(2)) != 0) {

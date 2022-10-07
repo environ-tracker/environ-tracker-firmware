@@ -4,6 +4,8 @@
 #include <zephyr/logging/log.h>
 
 #include "gnss.h"
+#include "accumulator.h"
+#include "location.h"
 
 
 LOG_MODULE_REGISTER(gnss, CONFIG_LOG_DEFAULT_LEVEL);
@@ -65,6 +67,7 @@ void serial_cb(const struct device *dev, void *user_data)
 
 void gnss_thread(void *a, void *b, void *c)
 {
+	struct location_wrapper location = {0};
     char tx_buf[NMEA_MAX_MSG_SIZE];
 	bool debug_output_enable = false;
 
@@ -80,6 +83,9 @@ void gnss_thread(void *a, void *b, void *c)
     /* Configure interrupt and callback to receive data */
 	uart_irq_callback_user_data_set(zoe_uart_dev, serial_cb, NULL);
 	uart_irq_rx_enable(zoe_uart_dev);
+
+
+	location.source = LOCATION_GNSS;
 
 
     LOG_INF("ZOE-M8Q UART setup");
@@ -102,6 +108,14 @@ void gnss_thread(void *a, void *b, void *c)
             
 
 			// TODO: parse NMEA sentences
+
+			/* Place the retrieved location data on the queue and post event */
+			while (k_msgq_put(&location_msgq, &location, K_NO_WAIT) != 0) {
+				k_msgq_purge(&location_msgq);
+				LOG_DBG("location_msgq has been purged");
+			}
+
+			k_event_post(&data_events, LOCATION_DATA_PENDING);
         }
     }
 }

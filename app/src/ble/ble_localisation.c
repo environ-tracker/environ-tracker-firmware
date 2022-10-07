@@ -328,10 +328,13 @@ void ble_localisation(void *a, void *b, void *c)
             }
             k_mutex_unlock(&ibeacon_list_mutex);
 
-            struct location location = {
-                .altitude = 1000,
-                .latitude = 2000,
-                .longitude = 213,
+            struct location_wrapper location = {
+                .source = LOCATION_BLE,
+                .location = {
+                    .altitude = 1000,
+                    .latitude = 2000,
+                    .longitude = 213,
+                }
             };
 
             /* Send environmental data */
