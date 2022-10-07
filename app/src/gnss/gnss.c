@@ -3,7 +3,8 @@
 #include <zephyr/drivers/uart.h>
 #include <zephyr/logging/log.h>
 
-#include "gnss.h"
+#include "gnss/gnss.h"
+#include "gnss/minmea.h"
 #include "accumulator.h"
 #include "location.h"
 
@@ -15,17 +16,14 @@ LOG_MODULE_REGISTER(gnss, CONFIG_LOG_DEFAULT_LEVEL);
 #define GNSS_STACK_SIZE 1024
 #define GNSS_PRIORITY   5
 
-/* Maximum NMEA message size */
-#define NMEA_MAX_MSG_SIZE 256
-
 /* Queue to store GNSS receiver messages */
-K_MSGQ_DEFINE(uart_msgq, NMEA_MAX_MSG_SIZE, 10, 4);
+K_MSGQ_DEFINE(uart_msgq, MINMEA_MAX_SENTENCE_LENGTH, 10, 4);
 
 /* UART device for ZOE-M8Q GPS */
 static const struct device *zoe_uart_dev = DEVICE_DT_GET(DT_NODELABEL(uart1));
 
 /* Receive buffer used in UART ISR callback */
-static char rx_buf[NMEA_MAX_MSG_SIZE];
+static char rx_buf[MINMEA_MAX_SENTENCE_LENGTH];
 static int rx_buf_pos;
 
 /* Controls behaviour of the GNSS module */
@@ -68,7 +66,7 @@ void serial_cb(const struct device *dev, void *user_data)
 void gnss_thread(void *a, void *b, void *c)
 {
 	struct location_wrapper location = {0};
-    char tx_buf[NMEA_MAX_MSG_SIZE];
+    char tx_buf[MINMEA_MAX_SENTENCE_LENGTH];
 	bool debug_output_enable = false;
 
 
@@ -109,13 +107,34 @@ void gnss_thread(void *a, void *b, void *c)
 
 			// TODO: parse NMEA sentences
 
-			/* Place the retrieved location data on the queue and post event */
-			while (k_msgq_put(&location_msgq, &location, K_NO_WAIT) != 0) {
-				k_msgq_purge(&location_msgq);
-				LOG_DBG("location_msgq has been purged");
-			}
+			switch (minmea_sentence_id(tx_buf, false)) {
+			case MINMEA_SENTENCE_GGA:
+				struct minmea_sentence_gga frame;
 
-			k_event_post(&data_events, LOCATION_DATA_PENDING);
+				if (!minmea_parse_gga(&frame, tx_buf)) {
+					LOG_WRN("Issue parsing NMEA GGA message");
+					break;	
+				} else if (frame.fix_quality == 0) {
+					break;
+				}
+				
+				LOG_INF("xxGGA: fix quality: %d", frame.fix_quality);
+
+				// TODO: store GGA data
+
+
+				/* Place the retrieved location data on the queue */
+				while (k_msgq_put(&location_msgq, &location, K_NO_WAIT) != 0) {
+					k_msgq_purge(&location_msgq);
+					LOG_DBG("location_msgq has been purged");
+				}
+
+				k_event_post(&data_events, LOCATION_DATA_PENDING);
+
+				break;
+			default:
+				/* We don't care about these messages */
+			}
         }
     }
 }

@@ -1,7 +1,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/shell/shell.h>
 
-#include "gnss.h"
+#include "gnss/gnss.h"
 
 
 static int cmd_toggle_gnss_debug_output(const struct shell *shell, 

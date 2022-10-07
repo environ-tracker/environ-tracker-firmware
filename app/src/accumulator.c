@@ -5,7 +5,6 @@
 #include "environ.h"
 #include "imu.h"
 #include "location.h"
-#include "gnss.h"
 
 LOG_MODULE_REGISTER(accumulator);
 
