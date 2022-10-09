@@ -20,7 +20,7 @@ nanopb_generate_cpp(proto_sources proto_headers RELPATH .
 )
 
 zephyr_library_include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories(inc inc/file inc/ble inc/network inc/gnss)
+include_directories(inc inc/file inc/ble inc/network inc/gnss inc/gnss/ubx)
 
 
 target_sources(app 
@@ -43,4 +43,5 @@ target_sources(app
         src/gnss/gnss.c
         src/gnss/gnss_shell_cmds.c
         src/gnss/minmea.c
+        src/gnss/ubx/u_ubx_protocol.c
 )
