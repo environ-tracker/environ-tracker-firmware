@@ -54,8 +54,6 @@ void accumulator_thread(void *a, void *b, void *c)
             continue;
         }
 
-        LOG_INF("all msgq read. location source: %d", sys_data.location.source);
-
 
         if (lorawan) {
 
