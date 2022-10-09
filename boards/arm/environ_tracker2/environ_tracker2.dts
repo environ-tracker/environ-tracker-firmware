@@ -21,6 +21,8 @@
     };
 
     connections {
+        compatible = "gpio-keys";
+
         bat_chrg: bat_chrg_0 {
             gpios = <&gpio0 1 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
             label = "battery-charge-input";
