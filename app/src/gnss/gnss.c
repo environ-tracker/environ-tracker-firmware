@@ -114,8 +114,16 @@ void gnss_thread(void *a, void *b, void *c)
 				
 				LOG_INF("xxGGA: fix quality: %d", frame.fix_quality);
 
-				// TODO: store GGA data
+				/* Store the location data in 1e7 degrees */
+				location.location.latitude = (uint32_t)(minmea_tocoord(
+						&frame.latitude) * 10000000);
+				location.location.longitude = (uint32_t)(minmea_tocoord(
+						&frame.longitude) * 10000000);
 
+				/* Store the altitude in 1e4 meters */
+				location.location.altitude = (uint32_t)minmea_rescale(
+						&frame.altitude, 1000);
+						
 
 				/* Place the retrieved location data on the queue */
 				while (k_msgq_put(&location_msgq, &location, K_NO_WAIT) != 0) {
