@@ -66,7 +66,7 @@ static int cmd_board(const struct shell *shell, size_t argc, char **argv)
 
 
 SHELL_COND_CMD_ARG_REGISTER(DT_NODE_HAS_STATUS(DT_ALIAS(led0), okay), led, 
-        NULL, "led commands\n\r o : on\n\r f : off\n\r t : toggle\n\r "
+        NULL, "led commands\n\r. \r\to : on\n\r\tf : off\n\r\tt : toggle\n\r\t"
         "g : get state", cmd_led, 2, 0);
 
 SHELL_CMD_REGISTER(board, NULL, "Show board", cmd_board);
