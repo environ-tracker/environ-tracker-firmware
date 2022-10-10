@@ -262,8 +262,13 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 void ble_localisation(void *a, void *b, void *c)
 {
     int ret, beacons_found = 0, missed_scans = 0;
+    bool data_valid = false;
     struct ibeacon_packet *beacon;
     sys_snode_t *node;
+    struct location_wrapper location = {
+        .source = LOCATION_BLE,
+        .location = {0}
+    };
 
     sys_slist_init(&ibeacon_list);
     k_mutex_init(&ibeacon_list_mutex);
@@ -291,27 +296,27 @@ void ble_localisation(void *a, void *b, void *c)
 
         /* If enough beacons have been found then run the localisation algo */
         beacons_found = k_mem_slab_num_used_get(&ibeacon_mem);
-        // if (beacons_found < 3) {
-        //     ++missed_scans;
+        if (beacons_found == 0) {
+            ++missed_scans;
 
-        //     /* Missed too many scans. Stop scanning for 10 minutes */
-        //     if (missed_scans >= MAX_MISSED_SCAN_PERIODS) {
+            /* Missed too many scans. Stop scanning for 10 minutes */
+            if (missed_scans >= MAX_MISSED_SCAN_PERIODS) {
 
-        //         bt_le_scan_stop();
+                bt_le_scan_stop();
 
-        //         /* Scanning stopped, so empty the list */
-        //         empty_ibeacon_list();
+                /* Scanning stopped, so empty the list */
+                empty_ibeacon_list();
 
-        //         LOG_INF("Missed %d scanning periods, stopped iBeacon "
-        //                 "scanning and suspending", missed_scans);
+                LOG_INF("Missed %d scanning periods, stopped iBeacon "
+                        "scanning and suspending", missed_scans);
 
-        //         k_sleep(K_MINUTES(10));
+                k_sleep(K_MINUTES(5));
 
-        //         bt_le_scan_start(&scan_params, scan_cb);
+                bt_le_scan_start(&scan_params, scan_cb);
 
-        //         missed_scans = 0;
-        //     }
-        // } else {
+                missed_scans = 0;
+            }
+        } else {
             missed_scans = 0;
 
             k_mutex_lock(&ibeacon_list_mutex, K_MSEC(1));
@@ -321,31 +326,52 @@ void ble_localisation(void *a, void *b, void *c)
                 // DEBUG
                 LOG_INF("Beacon ID %u, rssi %d", beacon->beacon.id, 
                         beacon->rssi);
-                
-                // TODO: Find a position estimate
+            
+
+                /* Check if beacon was found */
+                // BUG unaligned memory access
+                // ret = find_beacon(&beacon->beacon); 
+                ret = 0;
+                if (ret < 0) {
+                    /* Beacon either not in file, or error occured. Try next */
+
+                    if (ret == -ESRCH) {
+                        /* Beacon not in network file, request */
+                        LOG_INF("Request beacon with ID: %d", 
+                                beacon->beacon.id);
+                    }
+
+                    LOG_INF("Not found");
+
+                    k_mem_slab_free(&ibeacon_mem, (void **)&beacon);
+                    continue;
+                }
+
+                /* Beacon was found */ // TODO: Extend to 1 || 2
+                if (beacons_found == 1) {
+                    /* Handle special case */
+                    location.location = beacon->beacon.location;
+                    data_valid = true;
+                } else {
+                    LOG_INF("Unimplemented");
+                }
 
                 k_mem_slab_free(&ibeacon_mem, (void **)&beacon);
             }
             k_mutex_unlock(&ibeacon_list_mutex);
 
-            struct location_wrapper location = {
-                .source = LOCATION_BLE,
-                .location = {
-                    .altitude = 1000,
-                    .latitude = 2000,
-                    .longitude = 213,
-                }
-            };
-
-            /* Send environmental data */
-            while (k_msgq_put(&location_msgq, &location, K_NO_WAIT) != 0) {
+            if (data_valid) {
+                while (k_msgq_put(&location_msgq, &location, K_NO_WAIT) != 0) {
                 /* message queue is full: purge old data & try again */
-                k_msgq_purge(&location_msgq);
-                LOG_DBG("location_msgq has been purged");
+                    k_msgq_purge(&location_msgq);
+                    LOG_DBG("location_msgq has been purged");
+                }
+                data_valid = false;
+                k_event_post(&data_events, LOCATION_DATA_PENDING);
             }
-
-            k_event_post(&data_events, LOCATION_DATA_PENDING);
-        // }
+            /* Send environmental data */
+            
+        }
     }
 }
 
