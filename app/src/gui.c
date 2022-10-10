@@ -194,11 +194,11 @@ static int display_home_screen(const struct device *dev,
 
     if (gauge_ok) {
         struct sensor_value soc; 
-        
+
         sensor_sample_fetch(gauge_dev);
         sensor_channel_get(gauge_dev, SENSOR_CHAN_GAUGE_STATE_OF_CHARGE, &soc);
 
-        snprintk(buf, sizeof(buf), "BAT: %.2f%%", 
+        snprintk(buf, sizeof(buf), "BAT: %.f%%", 
                 (soc.val1 + (float)soc.val2 / 1000000));
 
         cfb_print(dev, buf, 0, 32);
