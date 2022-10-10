@@ -21,6 +21,8 @@ struct system_data {
     enum activity activity;
 };
 
+extern struct k_msgq gui_msgq;
+
 extern struct k_msgq lorawan_msgq;
 
 extern struct k_event data_events;

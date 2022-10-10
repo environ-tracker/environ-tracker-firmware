@@ -12,6 +12,8 @@ LOG_MODULE_REGISTER(accumulator);
 #define ACCUMULATOR_STACK_SIZE  2048
 #define ACCUMULATOR_PRIORITY    6
 
+/* Create the message queue for the GUI backend */
+K_MSGQ_DEFINE(gui_msgq, sizeof(struct system_data), 5, 4);
 
 /* Create the message queue for the LoRaWAN backend */
 K_MSGQ_DEFINE(lorawan_msgq, sizeof(struct system_data), 5, 4);
@@ -54,6 +56,7 @@ void accumulator_thread(void *a, void *b, void *c)
             continue;
         }
 
+        LOG_INF("sending sys_data");
 
         if (lorawan) {
 
@@ -62,6 +65,12 @@ void accumulator_thread(void *a, void *b, void *c)
                 k_msgq_purge(&lorawan_msgq);
                 LOG_DBG("lorawan_msgq has been purged");
             }
+        }
+
+        /* Send to GUI thread */
+        while (k_msgq_put(&gui_msgq, &sys_data, K_MSEC(2)) != 0) {
+            k_msgq_purge(&gui_msgq);
+            LOG_DBG("gui_msgq has been purged");
         }
 
     }

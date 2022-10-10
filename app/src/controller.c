@@ -14,6 +14,9 @@ LOG_MODULE_REGISTER(controller);
 #define CONTROLLER_PRIORITY    3
 
 
+K_EVENT_DEFINE(gpio_events);
+
+
 static const struct gpio_dt_spec bat_chg_inidicator = GPIO_DT_SPEC_GET(
         DT_NODELABEL(bat_chrg), gpios);
 

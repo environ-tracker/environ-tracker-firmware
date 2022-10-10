@@ -1,8 +1,11 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
+#include <zephyr/posix/time.h>
 #include <zephyr/display/cfb.h>
 #include <zephyr/logging/log.h>
 
+#include "accumulator.h"
+#include "controller.h"
 
 LOG_MODULE_REGISTER(gui, CONFIG_LOG_DEFAULT_LEVEL);
 
@@ -11,8 +14,24 @@ LOG_MODULE_REGISTER(gui, CONFIG_LOG_DEFAULT_LEVEL);
 #define GUI_THREAD_PRIORITY     8
 
 
-static int splash_screen_display(const struct device *dev);
+static int display_splash_screen(const struct device *dev);
+static int display_home_screen(const struct device *dev, 
+        const struct system_data *sys_data);
+static int display_environ_screen(const struct device *dev, 
+        const struct system_data *sys_data);
+static int display_location_screen(const struct device *dev, 
+        const struct system_data *sys_data);
 void gui_thread(void *a, void *b, void *c);
+
+
+enum gui_screens {
+    SCREEN_HOME = 0,
+    SCREEN_ENVIRON,
+    SCREEN_LOCATION,
+    SCREEN_SETTINGS,
+    NUM_SCREENS,
+};
+
 
 
 K_THREAD_DEFINE(gui, GUI_THREAD_STACK_SIZE, gui_thread, NULL, NULL, NULL, 
@@ -21,6 +40,10 @@ K_THREAD_DEFINE(gui, GUI_THREAD_STACK_SIZE, gui_thread, NULL, NULL, NULL,
 
 void gui_thread(void *a, void *b, void *c)
 {
+    int ret;
+    struct system_data sys_data = {0};
+    enum gui_screens current_screen = SCREEN_HOME;
+
     LOG_INF("GUI started.");
 
     const struct device *dev = DEVICE_DT_GET(DT_NODELABEL(ssd1306));
@@ -53,17 +76,77 @@ void gui_thread(void *a, void *b, void *c)
             cfb_get_display_parameter(dev, CFB_DISPLAY_ROWS),
             cfb_get_display_parameter(dev, CFB_DISPLAY_COLS));
 
-    splash_screen_display(dev);
+    display_splash_screen(dev);
+
+    display_home_screen(dev, &sys_data);
+
+    while (1) {
+
+        /* Handle button controls */
+        uint32_t events = k_event_wait(&gpio_events, BUTTON_SHORT_EVENTS_ALL, false, K_MSEC(50));
+        if (events) {
+            if (events & LEFT_BUTTON_SHORT_EVENT) {
+                current_screen -= 1;
+                if (current_screen < 0) {
+                    current_screen = SCREEN_SETTINGS;
+                }
+            }
+            if (events & RIGHT_BUTTON_SHORT_EVENT) {
+                current_screen = (current_screen + 1) % NUM_SCREENS;
+            }
+
+            k_event_set_masked(&gpio_events, 0, BUTTON_SHORT_EVENTS_ALL);
+        }
+        
+
+        if (current_screen == SCREEN_SETTINGS) {
+            LOG_WRN("Settings screen not implemented");
+        } else {
+            // ret = k_msgq_get(&gui_msgq, &sys_data, K_MSEC(50));
+            // if (ret) {
+            //     continue;
+            // }
+
+            sys_data.timestamp = k_uptime_get_32();
+
+            switch (current_screen) {
+            case SCREEN_HOME:
+                display_home_screen(dev, &sys_data);
+                break;
+            case SCREEN_ENVIRON:
+                display_environ_screen(dev, &sys_data);
+                break;
+            case SCREEN_LOCATION:
+                display_location_screen(dev, &sys_data);
+                break;
+            default:
+                break;
+            }
+        }
+        
+    }
 
 }
 
-static int splash_screen_display(const struct device *dev)
+static int display_splash_screen(const struct device *dev)
 {
     int rc;
 
     cfb_framebuffer_clear(dev, false);
 
-    rc = cfb_print(dev, "0123456789", 0, 0);
+    rc = cfb_print(dev, "Environ", 28, 8);
+    if (rc != 0) {
+        LOG_ERR("Failed to write to CBF framebuffer. (%d)", rc);
+        return rc;
+    }
+
+    rc = cfb_print(dev, "Tracker", 28, 8 + 2*8);
+    if (rc != 0) {
+        LOG_ERR("Failed to write to CBF framebuffer. (%d)", rc);
+        return rc;
+    }
+
+    rc = cfb_print(dev, "v2.0", 44, 5*8);
     if (rc != 0) {
         LOG_ERR("Failed to write to CBF framebuffer. (%d)", rc);
         return rc;
@@ -71,11 +154,50 @@ static int splash_screen_display(const struct device *dev)
 
     cfb_framebuffer_finalize(dev);
 
-    // k_sleep(K_SECONDS(5));
+    k_sleep(K_SECONDS(2));
 
-    // cfb_framebuffer_clear(dev, true);
+    cfb_framebuffer_clear(dev, true);
 
-    // k_sleep(K_SECONDS(1));
+    k_sleep(K_MSEC(200));
 
+    return 0;
+}
+
+static int display_home_screen(const struct device *dev, 
+        const struct system_data *sys_data)
+{
+    struct timespec time;
+    struct tm tm;
+    char buf[100];
+
+    clock_gettime(CLOCK_REALTIME, &time);
+    gmtime_r(&time.tv_sec, &tm);
+
+    cfb_framebuffer_clear(dev, false);
+
+    snprintk(buf, sizeof(buf), "%d-%02u-%02u",  tm.tm_year + 1900, 
+            tm.tm_mon + 1, tm.tm_mday);
+
+    cfb_print(dev, buf, 0, 0);
+
+    snprintk(buf, sizeof(buf), "%02u:%02u:%02u UTC", tm.tm_hour, tm.tm_min, 
+            tm.tm_sec);
+
+    cfb_print(dev, buf, 0, 16);
+
+    cfb_framebuffer_finalize(dev);
+
+    return 0;
+}
+
+static int display_environ_screen(const struct device *dev, 
+        const struct system_data *sys_data)
+{
+    return 0;
+}
+
+static int display_location_screen(const struct device *dev, 
+        const struct system_data *sys_data)
+{
     return 0;
 }

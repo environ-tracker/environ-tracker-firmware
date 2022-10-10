@@ -4,6 +4,8 @@
 
 #include <zephyr/logging/log.h>
 
+#include "controller.h"
+
 LOG_MODULE_DECLARE(init);
 
 
@@ -12,6 +14,18 @@ LOG_MODULE_DECLARE(init);
 #define SW0_NODE    DT_ALIAS(sw0)
 #define SW1_NODE    DT_ALIAS(sw1)
 #define SW2_NODE    DT_ALIAS(sw2)
+
+
+#define MIN_PULSE_TIME      10
+#define LONG_PULSE_TIME     1000
+
+
+enum button_map {
+    BUTTON_LEFT = 0,
+    BUTTON_RIGHT = 1,
+    BUTTON_SELECT = 2,
+    BUTTON_UNDEFINED = -1,
+};
 
 
 static const struct gpio_dt_spec button0 = GPIO_DT_SPEC_GET(SW0_NODE, gpios);
@@ -23,23 +37,48 @@ static struct gpio_callback button1_cb_data;
 static struct gpio_callback button2_cb_data;
 
 
+static enum button_map map_pin(uint32_t pin) 
+{
+    if (pin == BIT(button0.pin)) {
+        return BUTTON_LEFT;
+    } else if (pin == BIT(button1.pin)) {
+        return BUTTON_RIGHT;
+    } else if (pin == BIT(button2.pin)) {
+        return BUTTON_SELECT;
+    } else {
+        return BUTTON_UNDEFINED;
+    }
+}
+
+
 static void button_pressed(const struct device *dev, struct gpio_callback *cb, 
         uint32_t pins)
 {
-    uint8_t pin = -1;
+    static int64_t first_edge_time[3] = {0};
+    int pin = map_pin(pins);
 
-    if (pins == BIT(button0.pin)) {
-        pin = button0.pin;
-    } else if (pins == BIT(button1.pin)) {
-        pin = button1.pin;
-    } else if (pins == BIT(button2.pin)) {
-        pin = button2.pin;
+    if (pin == BUTTON_UNDEFINED) {
+        LOG_WRN("Undefined button in button callback");
+        return;
     }
 
     if (gpio_pin_get(dev, pin)) {
         LOG_INF("Button press first edge, pin: %d", pin);
+
+        first_edge_time[pin] = k_uptime_get();
+        return;
     } else {
-        LOG_INF("Button press second edge, pin: %d", pin);
+        
+
+        int64_t pulse_time = k_uptime_delta(&first_edge_time[pin]);
+        
+        LOG_INF("Button press second edge, pin: %d. pulse time: %lld", pin, pulse_time);
+        
+        if (pulse_time > MIN_PULSE_TIME) {
+
+            k_event_post(&gpio_events, ((pulse_time < LONG_PULSE_TIME) ? 
+                    SHORT_PRESS_EVENT : LONG_PRESS_EVENT) << pin);
+        }
     }
 }
 
