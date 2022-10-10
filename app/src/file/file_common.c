@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <zephyr/kernel.h>
 #include <zephyr/fs/fs.h>
 #include <zephyr/fs/littlefs.h>
 
@@ -15,6 +16,7 @@ LOG_MODULE_REGISTER(file, LOG_LEVEL_INF);
 FS_FSTAB_DECLARE_ENTRY(PARTITION_NODE);
 struct fs_mount_t *mp = &FS_FSTAB_ENTRY(PARTITION_NODE);
 
+K_MUTEX_DEFINE(fs_mutex);
 
 
 int absolute_file_name(char *path, char *fname)
@@ -57,11 +59,15 @@ int read_file(char *fname, uint8_t *data, uint32_t len)
         return rc;
     }
 
+    if ((rc = k_mutex_lock(&fs_mutex, K_FOREVER))) {
+        return rc;
+    }
+
     fs_file_t_init(&file);
 	rc = fs_open(&file, abs_fname, FS_O_READ);
 	if (rc < 0) {
 		LOG_ERR("FAIL: open %s: %d", fname, rc);
-		return rc;
+		goto out2;
 	}
 
 	rc = fs_read(&file, data, len);
@@ -76,8 +82,12 @@ out:
 	ret = fs_close(&file);
 	if (ret < 0) {
 		LOG_ERR("FAIL: close %s: %d", fname, ret);
+        k_mutex_unlock(&fs_mutex);
 		return ret;
 	}
+
+out2:
+    k_mutex_unlock(&fs_mutex);
 
 	return (rc < 0 ? rc : 0);
 }
@@ -93,11 +103,15 @@ int write_file(char *fname, uint8_t *data, uint32_t len)
         return rc;
     }
 
+    if ((rc = k_mutex_lock(&fs_mutex, K_FOREVER))) {
+        return rc;
+    }
+
     fs_file_t_init(&file);
 	rc = fs_open(&file, abs_fname, FS_O_CREATE | FS_O_WRITE);
 	if (rc < 0) {
 		LOG_ERR("FAIL: open %s: %d", fname, rc);
-		return rc;
+		goto out2;
 	}
 
     rc = fs_seek(&file, 0, FS_SEEK_SET);
@@ -114,12 +128,15 @@ int write_file(char *fname, uint8_t *data, uint32_t len)
 
     LOG_INF("%s wrote %d bytes", fname, rc);
 
-    out:
+out:
 	ret = fs_close(&file);
 	if (ret < 0) {
 		LOG_ERR("FAIL: close %s: %d", fname, ret);
-		return ret;
+		k_mutex_unlock(&fs_mutex);
+        return ret;
 	}
+out2:
+    k_mutex_unlock(&fs_mutex);
 
 	return (rc < 0 ? rc : 0);
 }
@@ -129,7 +146,7 @@ int search_directory(char *dir_name, char *file_name)
     struct fs_dir_t dir;
     struct fs_dirent entry;
     char dir_path[FILE_NAME_LEN];
-    int err = 0, ret = 0;
+    int err = 0, ret = 0, rc = 0;
 
     // TODO: Use strnlen
     if (strlen(file_name) > FILE_NAME_LEN) {
@@ -143,11 +160,15 @@ int search_directory(char *dir_name, char *file_name)
 
     LOG_DBG("dir_name: %s, file_name: %s", dir_name, file_name);
 
+    if ((rc = k_mutex_lock(&fs_mutex, K_FOREVER))) {
+        return rc;
+    }
+
     fs_dir_t_init(&dir);
     err = fs_opendir(&dir, dir_path);
     if (err) {
         LOG_ERR("Error %d while opening dir: %s", err, dir_name);
-        return err;
+        goto out;
     }
 
     while (1) {
@@ -175,6 +196,9 @@ int search_directory(char *dir_name, char *file_name)
         LOG_ERR("Error %d closing dir: %s", err, dir_name);
     }
 
+out:
+    k_mutex_unlock(&fs_mutex);
+
     return (err) ? err : ret;
 }
 
@@ -191,14 +215,18 @@ int search_file(char *fname, uint8_t *data, uint32_t len, uint32_t offset,
         return rc;
     }
 
+    if ((rc = k_mutex_lock(&fs_mutex, K_FOREVER))) {
+        return rc;
+    }
+
     fs_file_t_init(&file);
     rc = fs_open(&file, abs_fname, FS_O_READ);
     if (rc == -EEXIST) {
         LOG_WRN("search_file: File %s doesn't exist", fname);
-        return rc;
+        goto out;
     } else if (rc < 0) {
         LOG_ERR("search_file: Failed opening %s. (%d)", fname, rc);
-        return rc;
+        goto out;
     }
 
     while (1) {
@@ -224,8 +252,12 @@ int search_file(char *fname, uint8_t *data, uint32_t len, uint32_t offset,
     ret = fs_close(&file);
     if (ret < 0) {
         LOG_ERR("search_file: Failed to close %s. (%d)", fname, ret);
+        k_mutex_unlock(&fs_mutex);
         return ret;
     }
+
+out:
+    k_mutex_unlock(&fs_mutex);
 
     return (rc < 0 ? rc : 0);
 }
