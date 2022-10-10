@@ -1,6 +1,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/posix/time.h>
+#include <zephyr/drivers/sensor.h>
 #include <zephyr/display/cfb.h>
 #include <zephyr/logging/log.h>
 
@@ -107,8 +108,6 @@ void gui_thread(void *a, void *b, void *c)
             //     continue;
             // }
 
-            sys_data.timestamp = k_uptime_get_32();
-
             switch (current_screen) {
             case SCREEN_HOME:
                 display_home_screen(dev, &sys_data);
@@ -166,9 +165,16 @@ static int display_splash_screen(const struct device *dev)
 static int display_home_screen(const struct device *dev, 
         const struct system_data *sys_data)
 {
+    const struct device *gauge_dev = DEVICE_DT_GET(DT_NODELABEL(lc709204f));
     struct timespec time;
     struct tm tm;
+    bool gauge_ok = true;
     char buf[100];
+
+    if (!device_is_ready(gauge_dev)) {
+        LOG_ERR("Fuel Gauge device is not ready");
+        gauge_ok = false;
+    }
 
     clock_gettime(CLOCK_REALTIME, &time);
     gmtime_r(&time.tv_sec, &tm);
@@ -184,6 +190,20 @@ static int display_home_screen(const struct device *dev,
             tm.tm_sec);
 
     cfb_print(dev, buf, 0, 16);
+
+
+    if (gauge_ok) {
+        struct sensor_value soc; 
+        
+        sensor_sample_fetch(gauge_dev);
+        sensor_channel_get(gauge_dev, SENSOR_CHAN_GAUGE_STATE_OF_CHARGE, &soc);
+
+        snprintk(buf, sizeof(buf), "BAT: %.2f%%", 
+                (soc.val1 + (float)soc.val2 / 1000000));
+
+        cfb_print(dev, buf, 0, 32);
+    }
+
 
     cfb_framebuffer_finalize(dev);
 
