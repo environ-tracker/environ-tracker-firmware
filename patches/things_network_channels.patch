@@ -1,0 +1,20 @@
+diff --git a/subsys/lorawan/lorawan.c b/subsys/lorawan/lorawan.c
+index 2bebd67840..4439869c97 100644
+--- a/subsys/lorawan/lorawan.c
++++ b/subsys/lorawan/lorawan.c
+@@ -583,6 +583,15 @@ int lorawan_start(void)
+ 	mib_req.Type = MIB_SYSTEM_MAX_RX_ERROR;
+ 	mib_req.Param.SystemMaxRxError = CONFIG_LORAWAN_SYSTEM_MAX_RX_ERROR;
+ 	LoRaMacMibSetRequestConfirm(&mib_req);
++	
++	static uint16_t mask[6] = {0xff00, 0x0000, 0x0000, 0x0000, 0x0002, 0x0000};
++	mib_req.Type = MIB_CHANNELS_MASK;
++	mib_req.Param.ChannelsMask = mask;
++	LoRaMacMibSetRequestConfirm(&mib_req);
++	
++	mib_req.Type = MIB_CHANNELS_DEFAULT_MASK;
++	mib_req.Param.ChannelsMask = mask;
++	LoRaMacMibSetRequestConfirm(&mib_req);
+ 
+ 	return 0;
+ }

@@ -1,0 +1,34 @@
+diff --git a/subsys/shell/modules/date_service.c b/subsys/shell/modules/date_service.c
+index 94c93f48bd..384fbf099e 100644
+--- a/subsys/shell/modules/date_service.c
++++ b/subsys/shell/modules/date_service.c
+@@ -10,6 +10,8 @@
+ #include <string.h>
+ #include <zephyr/posix/time.h>
+ #include <zephyr/sys/timeutil.h>
++#include <zephyr/drivers/rtc/rtc_rv3028.h>
++#include <zephyr/device.h>
+ 
+ #define HELP_NONE      "[none]"
+ #define HELP_DATE_SET  "[Y-m-d] <H:M:S>"
+@@ -138,6 +140,7 @@ static int get_h_m_s(const struct shell *shell, struct tm *tm, char *time_str)
+ 
+ static int cmd_date_set(const struct shell *shell, size_t argc, char **argv)
+ {
++	const struct device *rtc = DEVICE_DT_GET_ONE(microcrystal_rv3028);
+ 	struct timespec tp;
+ 	struct tm tm;
+ 	int ret;
+@@ -180,6 +183,12 @@ static int cmd_date_set(const struct shell *shell, size_t argc, char **argv)
+ 		shell_error(shell, "Could not set date %d", ret);
+ 		return -EINVAL;
+ 	}
++	
++	ret = rv3028_rtc_set_time(rtc, tp.tv_sec);
++	if (ret != 0) {
++		shell_error(shell, "Could not set RTC date %d", ret);
++		return ret;
++	}
+ 
+ 	date_print(shell, &tm);
+ 
