@@ -44,4 +44,5 @@ target_sources(app
         src/gnss/gnss_shell_cmds.c
         src/gnss/minmea.c
         src/gnss/ubx/u_ubx_protocol.c
+        src/gui.c
 )
