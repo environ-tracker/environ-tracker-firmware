@@ -4,6 +4,7 @@
 #include <zephyr/posix/time.h>
 #include <zephyr/bluetooth/uuid.h>
 #include <zephyr/fs/fs.h>
+#include <zephyr/sys/byteorder.h>
 #include <zephyr/logging/log.h>
 
 #include "ble/ble_network.h"
@@ -117,6 +118,7 @@ int find_beacon(struct ibeacon *beacon)
 {
     char network_file[FILE_NAME_LEN];
     int ret, position;
+    uint8_t buf[32];
 
     strcpy(network_file, "beacons/");
     position = strlen(network_file);
@@ -125,10 +127,27 @@ int find_beacon(struct ibeacon *beacon)
             FILE_NAME_LEN - position);
 
     ret = search_file(network_file, (uint8_t *)&beacon->id, sizeof(beacon->id), 
-            0, (uint8_t *)&beacon->id, 16);
+            0, buf, sizeof(struct ibeacon_file_info));
     if (ret != 0) {
         return ret;
     }
+
+    if (beacon->id != sys_get_le32(buf)) {
+        LOG_ERR("find_beacon: Incorrect beacon ID matched. Critical error in "
+                "search_file function.");
+        return -1;
+    }
+
+    uint8_t pos = sizeof(uint32_t);
+
+    beacon->location.latitude = sys_get_le32(&buf[pos]);
+    pos += sizeof(uint32_t);
+
+    beacon->location.longitude = sys_get_le32(&buf[pos]);
+    pos += sizeof(uint32_t);
+
+    beacon->location.altitude = sys_get_le32(&buf[pos]);
+
 
     return 0;
 }
