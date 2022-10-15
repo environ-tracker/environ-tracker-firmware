@@ -10,7 +10,7 @@ LOG_MODULE_DECLARE(file);
 
 
 #ifdef CONFIG_APP_INIT_BEACON_FILES
-#include <bluetooth/uuid.h>
+#include <zephyr/bluetooth/uuid.h>
 /* NOTE: This is currently the only supported iBeacon network UUID */
 static const struct bt_uuid_128 supported_beacon_network = BT_UUID_INIT_128(
         BT_UUID_128_ENCODE(0x7aaf1b67, 0xf3c0, 0x4a54, 0xb314, 0x58fff1960a40));
