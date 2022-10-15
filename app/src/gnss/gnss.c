@@ -77,7 +77,7 @@ void gnss_thread(void *a, void *b, void *c)
 		return;
 	}
 
-	/* Double check GNSS receiver is woken */
+	/* Double check GNSS receiver is woken */ 
 	wakeup_gnss();
 
     /* Set the GNSS into 1Hz super-efficient power mode */
