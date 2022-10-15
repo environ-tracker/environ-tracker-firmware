@@ -55,57 +55,57 @@ K_THREAD_DEFINE(gnss_id, GNSS_STACK_SIZE, gnss_thread, NULL, NULL, NULL,
  */
 void gnss_thread(void *a, void *b, void *c)
 {
-	struct location_wrapper location = {0};
+    struct location_wrapper location = {0};
     char tx_buf[MINMEA_MAX_SENTENCE_LENGTH];
-	bool debug_output_enable = false;
-	uint32_t events;
-	int64_t last_gps_fix_time;
-	int rc;
+    bool debug_output_enable = false;
+    uint32_t events;
+    int64_t last_gps_fix_time;
+    int rc;
 
-	const struct device *rtc = DEVICE_DT_GET_ONE(microcrystal_rv3028);
+    const struct device *rtc = DEVICE_DT_GET_ONE(microcrystal_rv3028);
 
     LOG_INF("GNSS thread started");
 
-	if (!device_is_ready(rtc)) {
-		LOG_ERR("%s: Device not ready.", rtc->name);
-		return;
-	}
+    if (!device_is_ready(rtc)) {
+        LOG_ERR("%s: Device not ready.", rtc->name);
+        return;
+    }
 
-	/* Check if GNSS receiver UART is enabled */
+    /* Check if GNSS receiver UART is enabled */
     if (!device_is_ready(zoe_uart_dev)) {
-		LOG_ERR("%s: GNSS UART device not ready.", zoe_uart_dev->name);
-		return;
-	}
+        LOG_ERR("%s: GNSS UART device not ready.", zoe_uart_dev->name);
+        return;
+    }
 
-	/* Double check GNSS receiver is woken */ 
-	wakeup_gnss();
+    /* Double check GNSS receiver is woken */ 
+    wakeup_gnss();
 
     /* Set the GNSS into 1Hz super-efficient power mode */
-	set_gnss_low_power_poll();
+    set_gnss_low_power_poll();
 
-	/* Enable NMEA ZDA */
-	set_gnss_nmea_zda_enable();
+    /* Enable NMEA ZDA */
+    set_gnss_nmea_zda_enable();
 
     /* Configure interrupt and callback to receive data */
-	uart_irq_callback_user_data_set(zoe_uart_dev, serial_cb, NULL);
-	uart_irq_rx_enable(zoe_uart_dev);
+    uart_irq_callback_user_data_set(zoe_uart_dev, serial_cb, NULL);
+    uart_irq_rx_enable(zoe_uart_dev);
 
 
-	location.source = LOCATION_GNSS;
+    location.source = LOCATION_GNSS;
 
-	last_gps_fix_time = k_uptime_get();
+    last_gps_fix_time = k_uptime_get();
 
     LOG_INF("ZOE-M8Q UART setup");
 
     while (1) {
-		/* Check what events need to be handled */
-		events = k_event_wait(&gnss_control_events, GNSS_EVENTS, false, 
-				K_NO_WAIT);
-		if (events & GNSS_TOGGLE_DEBUG) {
+        /* Check what events need to be handled */
+        events = k_event_wait(&gnss_control_events, GNSS_EVENTS, false, 
+                K_NO_WAIT);
+        if (events & GNSS_TOGGLE_DEBUG) {
 
-			debug_output_enable = !debug_output_enable;
-			k_event_set_masked(&gnss_control_events, 0, GNSS_TOGGLE_DEBUG);
-		} else if (events & GNSS_SLEEP) {
+            debug_output_enable = !debug_output_enable;
+            k_event_set_masked(&gnss_control_events, 0, GNSS_TOGGLE_DEBUG);
+        } else if (events & GNSS_SLEEP) {
 
             sleep_gnss(0);
             k_event_set_masked(&gnss_control_events, 0, GNSS_SLEEP);
@@ -116,76 +116,76 @@ void gnss_thread(void *a, void *b, void *c)
         }
 
         while (k_msgq_get(&uart_msgq, &tx_buf, K_MSEC(50)) == 0) {
-			if (debug_output_enable) {
-				printk("%s", tx_buf);
-			}
+            if (debug_output_enable) {
+                printk("%s", tx_buf);
+            }
 
             /* Parse the received NMEA sentence */
-			switch (minmea_sentence_id(tx_buf, false)) {
-			case MINMEA_SENTENCE_GGA:
-				struct minmea_sentence_gga frame;
+            switch (minmea_sentence_id(tx_buf, false)) {
+            case MINMEA_SENTENCE_GGA:
+                struct minmea_sentence_gga frame;
 
-				if (!minmea_parse_gga(&frame, tx_buf)) {
-					LOG_WRN("Issue parsing NMEA GGA message");
-					break;	
-				} else if (frame.fix_quality == 0) {
+                if (!minmea_parse_gga(&frame, tx_buf)) {
+                    LOG_WRN("Issue parsing NMEA GGA message");
+                    break;	
+                } else if (frame.fix_quality == 0) {
                     /* No fix, ignore message */
 
-					if (k_uptime_get() - last_gps_fix_time > GNSS_TIMEOUT) {
-						LOG_INF("GNSS timed out with no fix, sleeping...");
-						
-						sleep_gnss(0);
-						k_sleep(GNSS_SLEEP_TIME);
-						wakeup_gnss();
+                    if (k_uptime_get() - last_gps_fix_time > GNSS_TIMEOUT) {
+                        LOG_INF("GNSS timed out with no fix, sleeping...");
+                        
+                        sleep_gnss(0);
+                        k_sleep(GNSS_SLEEP_TIME);
+                        wakeup_gnss();
 
-						last_gps_fix_time = k_uptime_get();
-						LOG_INF("GNSS woken");
-					}
+                        last_gps_fix_time = k_uptime_get();
+                        LOG_INF("GNSS woken");
+                    }
 
-					break;
-				}
+                    break;
+                }
 
-				last_gps_fix_time = k_uptime_get();
+                last_gps_fix_time = k_uptime_get();
 
-				/* Store the location data in 1e7 degrees */
-				location.location.latitude = minmea_tocoord(&frame.latitude);
-				location.location.longitude = minmea_tocoord(&frame.longitude);
+                /* Store the location data in 1e7 degrees */
+                location.location.latitude = minmea_tocoord(&frame.latitude);
+                location.location.longitude = minmea_tocoord(&frame.longitude);
 
-				/* Store the altitude in 1e4 meters */
-				location.location.altitude = minmea_tofloat(&frame.altitude);
-				LOG_INF("lat: %f, long: %f, alt: %f", location.location.latitude, location.location.longitude, location.location.altitude);
+                /* Store the altitude in 1e4 meters */
+                location.location.altitude = minmea_tofloat(&frame.altitude);
+                LOG_INF("lat: %f, long: %f, alt: %f", location.location.latitude, location.location.longitude, location.location.altitude);
 
-				/* Place the retrieved location data on the queue */
-				while (k_msgq_put(&location_msgq, &location, K_NO_WAIT) != 0) {
-					k_msgq_purge(&location_msgq);
-					LOG_DBG("location_msgq has been purged");
-				}
+                /* Place the retrieved location data on the queue */
+                while (k_msgq_put(&location_msgq, &location, K_NO_WAIT) != 0) {
+                    k_msgq_purge(&location_msgq);
+                    LOG_DBG("location_msgq has been purged");
+                }
 
-				k_event_post(&data_events, LOCATION_DATA_PENDING);
+                k_event_post(&data_events, LOCATION_DATA_PENDING);
 
-				break;
-			case MINMEA_SENTENCE_ZDA:
-				struct minmea_sentence_zda zda_frame;
-				struct timespec ts;
+                break;
+            case MINMEA_SENTENCE_ZDA:
+                struct minmea_sentence_zda zda_frame;
+                struct timespec ts;
 
-				if (!minmea_parse_zda(&zda_frame, tx_buf)) {
-					LOG_WRN("Issue parsing NMEA ZDA message");
-					break;
-				}
+                if (!minmea_parse_zda(&zda_frame, tx_buf)) {
+                    LOG_WRN("Issue parsing NMEA ZDA message");
+                    break;
+                }
 
-				rc = minmea_gettime(&ts, &zda_frame.date, &zda_frame.time);
-				if (rc == -1) {
-					/* Invalid timespec */
-					continue;
-				}
+                rc = minmea_gettime(&ts, &zda_frame.date, &zda_frame.time);
+                if (rc == -1) {
+                    /* Invalid timespec */
+                    continue;
+                }
 
-				clock_settime(CLOCK_REALTIME, &ts);
-				rv3028_rtc_set_time(rtc, ts.tv_sec);
+                clock_settime(CLOCK_REALTIME, &ts);
+                rv3028_rtc_set_time(rtc, ts.tv_sec);
 
-				LOG_INF("Clock set from GPS ZDA message");
-			default:
-				/* We don't care about these messages */
-			}
+                LOG_INF("Clock set from GPS ZDA message");
+            default:
+                /* We don't care about these messages */
+            }
         }
     }
 }
@@ -198,28 +198,29 @@ void gnss_thread(void *a, void *b, void *c)
  */
 static int32_t set_gnss_low_power_poll(void)
 {
-	char message[8] = {0};
-	char encodedMessage[U_UBX_PROTOCOL_OVERHEAD_LENGTH_BYTES + 8];
+    char message[8] = {0};
+    char encodedMessage[U_UBX_PROTOCOL_OVERHEAD_LENGTH_BYTES + 8];
     int32_t ret;
 
     /* Sets 1Hz SuperE mode */
-	message[1] = 0x03;
+    message[1] = 0x03;
 
     /* Encode the UBX-CFG-PMS message. */
-	ret = uUbxProtocolEncode(0x06, 0x86, message, sizeof(message), 
-			encodedMessage);
-	if (ret < 0) {
-		LOG_ERR("set_gnss_low_power_poll: Error encoding packet. (%d)", ret);
-		return ret;
-	}
+    ret = uUbxProtocolEncode(0x06, 0x86, message, sizeof(message), 
+            encodedMessage);
+    if (ret < 0) {
+        LOG_ERR("set_gnss_low_power_poll: Error encoding packet. (%d)", ret);
+        return ret;
+    }
 
     /* Send UBX message to GNSS receiver */
-	for (int i = 0; i < sizeof(encodedMessage); ++i) {
-		uart_poll_out(zoe_uart_dev, encodedMessage[i]);
-	}
+    for (int i = 0; i < sizeof(encodedMessage); ++i) {
+        uart_poll_out(zoe_uart_dev, encodedMessage[i]);
+    }
 
-	return 0;
+    return 0;
 }
+
 
 /**
  * @brief Enable the NMEA ZDA sentence in the GPS output
@@ -228,23 +229,23 @@ static int32_t set_gnss_low_power_poll(void)
  */
 static int32_t set_gnss_nmea_zda_enable(void)
 {
-	char message[3] = {0xf0, 0x08, 60};
-	char encodedMessage[U_UBX_PROTOCOL_OVERHEAD_LENGTH_BYTES + 3];
-	int32_t ret;
+    char message[3] = {0xf0, 0x08, 60};
+    char encodedMessage[U_UBX_PROTOCOL_OVERHEAD_LENGTH_BYTES + 3];
+    int32_t ret;
 
-	/* Encode the UBX-CFG-MSG message */
-	ret = uUbxProtocolEncode(0x06, 0x01, message, sizeof(message), 
-			encodedMessage);
-	if (ret < 0) {
-		LOG_ERR("set_gnss_nmea_zda_enable: Error encoding packet. (%d)",ret);
-		return ret;
-	}
+    /* Encode the UBX-CFG-MSG message */
+    ret = uUbxProtocolEncode(0x06, 0x01, message, sizeof(message), 
+            encodedMessage);
+    if (ret < 0) {
+        LOG_ERR("set_gnss_nmea_zda_enable: Error encoding packet. (%d)",ret);
+        return ret;
+    }
 
-	for (int i = 0; i < sizeof(encodedMessage); ++i) {
-		uart_poll_out(zoe_uart_dev, encodedMessage[i]);
-	}
+    for (int i = 0; i < sizeof(encodedMessage); ++i) {
+        uart_poll_out(zoe_uart_dev, encodedMessage[i]);
+    }
 
-	return 0;
+    return 0;
 }
 
 
@@ -256,33 +257,33 @@ static int32_t set_gnss_nmea_zda_enable(void)
  */
 static int32_t sleep_gnss(uint32_t duration)
 {
-	char message[16] = {0};
-	char encodedMessage[U_UBX_PROTOCOL_OVERHEAD_LENGTH_BYTES + 16];
+    char message[16] = {0};
+    char encodedMessage[U_UBX_PROTOCOL_OVERHEAD_LENGTH_BYTES + 16];
     int32_t ret;
 
     /* Save duration */
-	memcpy(&message[4], &duration, sizeof(duration));
+    memcpy(&message[4], &duration, sizeof(duration));
 
     /* Sets BACKUP flag */
-	message[8] = 1 << 1;
+    message[8] = 1 << 1;
 
     /* Sets wakeup source to UART RX pin */
-	message[12] = 1 << 3;
+    message[12] = 1 << 3;
 
     /* Encode the UBX-RXM-PMREQ message. */
-	ret = uUbxProtocolEncode(0x02, 0x41, message, sizeof(message), 
-			encodedMessage);
-	if (ret < 0) {
-		LOG_ERR("sleep_gnss: Error encoding packet. (%d)", ret);
-		return ret;
-	}
+    ret = uUbxProtocolEncode(0x02, 0x41, message, sizeof(message), 
+            encodedMessage);
+    if (ret < 0) {
+        LOG_ERR("sleep_gnss: Error encoding packet. (%d)", ret);
+        return ret;
+    }
 
     /* Send UBX message to GNSS receiver */
-	for (int i = 0; i < sizeof(encodedMessage); ++i) {
-		uart_poll_out(zoe_uart_dev, encodedMessage[i]);
-	}
+    for (int i = 0; i < sizeof(encodedMessage); ++i) {
+        uart_poll_out(zoe_uart_dev, encodedMessage[i]);
+    }
 
-	return 0;
+    return 0;
 }
 
 
@@ -291,7 +292,7 @@ static int32_t sleep_gnss(uint32_t duration)
  */
 static inline void wakeup_gnss(void)
 {
-	uart_poll_out(zoe_uart_dev, 0xff);
+    uart_poll_out(zoe_uart_dev, 0xff);
 }
 
 
@@ -301,29 +302,29 @@ static inline void wakeup_gnss(void)
  */
 void serial_cb(const struct device *dev, void *user_data)
 {
-	uint8_t c;
+    uint8_t c;
 
-	if (!uart_irq_update(zoe_uart_dev)) {
-		return;
-	}
+    if (!uart_irq_update(zoe_uart_dev)) {
+        return;
+    }
 
-	while (uart_irq_rx_ready(zoe_uart_dev)) {
+    while (uart_irq_rx_ready(zoe_uart_dev)) {
 
-		uart_fifo_read(zoe_uart_dev, &c, 1);
+        uart_fifo_read(zoe_uart_dev, &c, 1);
 
-		if ((c == '\n') && rx_buf_pos > 0) {
-			/* terminate string */
-			rx_buf[rx_buf_pos++] = c;
+        if ((c == '\n') && rx_buf_pos > 0) {
+            /* terminate string */
+            rx_buf[rx_buf_pos++] = c;
             rx_buf[rx_buf_pos] = '\0';
 
-			/* if queue is full, message is silently dropped */
-			k_msgq_put(&uart_msgq, &rx_buf, K_NO_WAIT);
+            /* if queue is full, message is silently dropped */
+            k_msgq_put(&uart_msgq, &rx_buf, K_NO_WAIT);
 
-			/* reset the buffer (it was copied to the msgq) */
-			rx_buf_pos = 0;
-		} else if (rx_buf_pos < (sizeof(rx_buf) - 1)) {
-			rx_buf[rx_buf_pos++] = c;
-		}
-		/* else: characters beyond buffer size are dropped */
-	}
+            /* reset the buffer (it was copied to the msgq) */
+            rx_buf_pos = 0;
+        } else if (rx_buf_pos < (sizeof(rx_buf) - 1)) {
+            rx_buf[rx_buf_pos++] = c;
+        }
+        /* else: characters beyond buffer size are dropped */
+    }
 }
