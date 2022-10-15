@@ -7,22 +7,13 @@
 
 #include "accumulator.h"
 #include "controller.h"
+#include "environ.h"
 
 LOG_MODULE_REGISTER(gui, CONFIG_LOG_DEFAULT_LEVEL);
 
 
 #define GUI_THREAD_STACK_SIZE   1024
 #define GUI_THREAD_PRIORITY     8
-
-
-static int display_splash_screen(const struct device *dev);
-static int display_home_screen(const struct device *dev, 
-        const struct system_data *sys_data);
-static int display_environ_screen(const struct device *dev, 
-        const struct system_data *sys_data);
-static int display_location_screen(const struct device *dev, 
-        const struct system_data *sys_data);
-void gui_thread(void *a, void *b, void *c);
 
 
 enum gui_screens {
@@ -34,6 +25,16 @@ enum gui_screens {
 };
 
 
+static int display_splash_screen(const struct device *dev);
+static int display_home_screen(const struct device *dev);
+static int display_environ_screen(const struct device *dev, 
+        const struct environ_data *env_data);
+static int display_location_screen(const struct device *dev, 
+        const struct system_data *sys_data);
+static int display_settings_screen(const struct device *dev);
+static const char * get_screen_name(enum gui_screens screen);
+void gui_thread(void *a, void *b, void *c);
+
 
 K_THREAD_DEFINE(gui, GUI_THREAD_STACK_SIZE, gui_thread, NULL, NULL, NULL, 
         GUI_THREAD_PRIORITY, 0, 0);
@@ -41,7 +42,7 @@ K_THREAD_DEFINE(gui, GUI_THREAD_STACK_SIZE, gui_thread, NULL, NULL, NULL,
 
 void gui_thread(void *a, void *b, void *c)
 {
-    int ret;
+    int rc;
     struct system_data sys_data = {0};
     enum gui_screens current_screen = SCREEN_HOME;
 
@@ -77,43 +78,54 @@ void gui_thread(void *a, void *b, void *c)
             cfb_get_display_parameter(dev, CFB_DISPLAY_ROWS),
             cfb_get_display_parameter(dev, CFB_DISPLAY_COLS));
 
-    display_splash_screen(dev);
+    rc = display_splash_screen(dev);
+    if (rc != 0) {
+        LOG_ERR("Error (%d) while displaying splash screen", rc);
+    }
 
-    display_home_screen(dev, &sys_data);
+    rc = display_home_screen(dev);
+    if (rc != 0) {
+        LOG_ERR("Error (%d) while displaying home screen", rc);
+    }
 
     while (1) {
 
         /* Handle button controls */
-        uint32_t events = k_event_wait(&gpio_events, BUTTON_SHORT_EVENTS_ALL, false, K_MSEC(50));
+        uint32_t events = k_event_wait(&gpio_events, BUTTON_SHORT_EVENTS_ALL, 
+                false, K_MSEC(50));
         if (events) {
             if (events & LEFT_BUTTON_SHORT_EVENT) {
-                current_screen -= 1;
-                if (current_screen < 0) {
-                    current_screen = SCREEN_SETTINGS;
+                if (current_screen == 0) {
+                    /* Wrap the current screen around */
+                    current_screen = NUM_SCREENS - 1;
+                } else {
+                    current_screen -= 1;
                 }
             }
             if (events & RIGHT_BUTTON_SHORT_EVENT) {
                 current_screen = (current_screen + 1) % NUM_SCREENS;
             }
 
+            LOG_INF("screen is now: %s", get_screen_name(current_screen));
+
             k_event_set_masked(&gpio_events, 0, BUTTON_SHORT_EVENTS_ALL);
         }
         
 
         if (current_screen == SCREEN_SETTINGS) {
-            LOG_WRN("Settings screen not implemented");
+            display_settings_screen(dev);
         } else {
-            // ret = k_msgq_get(&gui_msgq, &sys_data, K_MSEC(50));
-            // if (ret) {
-            //     continue;
-            // }
+            rc = k_msgq_get(&gui_msgq, &sys_data, K_MSEC(50));
+            if (rc != 0) {
+                // continue;
+            }
 
             switch (current_screen) {
             case SCREEN_HOME:
-                display_home_screen(dev, &sys_data);
+                display_home_screen(dev);
                 break;
             case SCREEN_ENVIRON:
-                display_environ_screen(dev, &sys_data);
+                display_environ_screen(dev, &sys_data.environ);
                 break;
             case SCREEN_LOCATION:
                 display_location_screen(dev, &sys_data);
@@ -135,35 +147,37 @@ static int display_splash_screen(const struct device *dev)
 
     rc = cfb_print(dev, "Environ", 28, 8);
     if (rc != 0) {
-        LOG_ERR("Failed to write to CBF framebuffer. (%d)", rc);
         return rc;
     }
 
     rc = cfb_print(dev, "Tracker", 28, 8 + 2*8);
     if (rc != 0) {
-        LOG_ERR("Failed to write to CBF framebuffer. (%d)", rc);
         return rc;
     }
 
     rc = cfb_print(dev, "v2.0", 44, 5*8);
     if (rc != 0) {
-        LOG_ERR("Failed to write to CBF framebuffer. (%d)", rc);
         return rc;
     }
 
-    cfb_framebuffer_finalize(dev);
+    rc = cfb_framebuffer_finalize(dev);
+    if (rc != 0) {
+        return rc;
+    }
 
     k_sleep(K_SECONDS(2));
 
-    cfb_framebuffer_clear(dev, true);
+    rc = cfb_framebuffer_clear(dev, true);
+    if (rc != 0) {
+        return rc;
+    }
 
     k_sleep(K_MSEC(200));
 
     return 0;
 }
 
-static int display_home_screen(const struct device *dev, 
-        const struct system_data *sys_data)
+static int display_home_screen(const struct device *dev)
 {
     const struct device *gauge_dev = DEVICE_DT_GET(DT_NODELABEL(lc709204f));
     struct timespec time;
@@ -198,7 +212,7 @@ static int display_home_screen(const struct device *dev,
         sensor_sample_fetch(gauge_dev);
         sensor_channel_get(gauge_dev, SENSOR_CHAN_GAUGE_STATE_OF_CHARGE, &soc);
 
-        snprintk(buf, sizeof(buf), "BAT: %.f%%", 
+        snprintk(buf, sizeof(buf), "BAT: %.1f%%", 
                 (soc.val1 + (float)soc.val2 / 1000000));
 
         cfb_print(dev, buf, 0, 32);
@@ -211,13 +225,86 @@ static int display_home_screen(const struct device *dev,
 }
 
 static int display_environ_screen(const struct device *dev, 
-        const struct system_data *sys_data)
+        const struct environ_data *env_data)
 {
+    int rc;
+    char buf[100];
+
+    cfb_framebuffer_clear(dev, false);
+
+    snprintk(buf, sizeof(buf), "%g C", 
+            sensor_value_to_double(&env_data->temp));
+
+    rc = cfb_print(dev, buf, 0, 0);
+    if (rc != 0) {
+        return rc;
+    }
+
+    snprintk(buf, sizeof(buf), "%g %%RH", 
+            sensor_value_to_double(&env_data->humidity));
+
+    rc = cfb_print(dev, buf, 0, 16);
+    if (rc != 0) {
+        return rc;
+    }
+
+    snprintk(buf, sizeof(buf), "%g kPa", 
+            sensor_value_to_double(&env_data->press));
+
+    rc = cfb_print(dev, buf, 0, 32);
+    if (rc != 0) {
+        return rc;
+    }
+
+    snprintk(buf, sizeof(buf), "UV Idx: %d", env_data->uv_index.val1);
+
+    rc = cfb_print(dev, buf, 0, 48);
+    if (rc != 0) {
+        return rc;
+    }
+
+    cfb_framebuffer_finalize(dev);
+
     return 0;
 }
 
 static int display_location_screen(const struct device *dev, 
         const struct system_data *sys_data)
 {
+    int rc;
+    char buf[100];
+
+    cfb_framebuffer_clear(dev, false);
+
+    snprintk(buf, sizeof(buf), "X: %d", sys_data->location.location.longitude);
+
+    rc = cfb_print(dev, buf, 0, 0);
+    
+    cfb_framebuffer_finalize(dev);
+
     return 0;
+}
+
+static int display_settings_screen(const struct device *dev)
+{
+    int rc;
+    
+    cfb_framebuffer_clear(dev, false);
+
+    rc = cfb_print(dev, "Settings", 16, 16);
+
+    cfb_framebuffer_finalize(dev);
+
+    return rc;
+}
+
+static const char * get_screen_name(enum gui_screens screen)
+{
+    static const char *names[] = {"home", "environ", "location", "settings"};
+
+    if (screen < 0 || screen >= NUM_SCREENS) {
+        return "error";
+    }
+
+    return names[screen];
 }
