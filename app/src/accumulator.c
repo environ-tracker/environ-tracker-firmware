@@ -19,7 +19,7 @@ K_MSGQ_DEFINE(gui_msgq, sizeof(struct system_data), 5, 4);
 K_MSGQ_DEFINE(lorawan_msgq, sizeof(struct system_data), 5, 4);
 
 /* Create message queue to receive location data from */
-K_MSGQ_DEFINE(location_msgq, sizeof(struct location), 5, 4);
+K_MSGQ_DEFINE(location_msgq, sizeof(struct location_wrapper), 5, 4);
 
 /* Input data pending event group */
 K_EVENT_DEFINE(data_events);
@@ -55,6 +55,8 @@ void accumulator_thread(void *a, void *b, void *c)
             LOG_ERR("location receive error: %d", err);
             continue;
         }
+
+        LOG_WRN("alt: %f", sys_data.location.location.altitude);
 
         LOG_INF("sending sys_data");
 

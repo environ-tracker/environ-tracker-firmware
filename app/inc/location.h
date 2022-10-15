@@ -12,9 +12,9 @@ enum location_source {
  * @brief A location in 1e7 degrees
  */
 struct location {
-    int32_t latitude;
-    int32_t longitude;
-    int32_t altitude;
+    float latitude;
+    float longitude;
+    float altitude;
 };
 
 struct location_wrapper {
