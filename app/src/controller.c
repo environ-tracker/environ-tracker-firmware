@@ -32,17 +32,17 @@ int increment_boot_count(void)
     int err;
 
     err = read_file("boot_count", (uint8_t *)&boot_count, sizeof(boot_count));
-	if (err == -EEXIST) {
-		boot_count = 0;
-	} else if (err != 0) {
+    if (err == -EEXIST) {
+        boot_count = 0;
+    } else if (err != 0) {
         return err;
     } else {
-		LOG_INF("boot_count is: %d", boot_count);
-		++boot_count;
-	}
+        LOG_INF("boot_count is: %d", boot_count);
+        ++boot_count;
+    }
 
-	err = write_file("boot_count", (uint8_t *)&boot_count, sizeof(boot_count));
-	
+    err = write_file("boot_count", (uint8_t *)&boot_count, sizeof(boot_count));
+    
     return err;
 }
 
@@ -60,10 +60,10 @@ void controller_thread(void *a, void *b, void *c)
     increment_boot_count();
 
 
-	while (1) {
-		k_msleep(100);
-	}
+    while (1) {
+        k_msleep(100);
+    }
 }
 
 K_THREAD_DEFINE(controller_id, CONTROLLER_STACK_SIZE, controller_thread, NULL,
-		NULL, NULL, CONTROLLER_PRIORITY, 0, 0);
+        NULL, NULL, CONTROLLER_PRIORITY, 0, 0);
