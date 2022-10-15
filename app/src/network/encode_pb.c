@@ -6,6 +6,8 @@
 #include "src/network/proto/upload_data.pb.h"
 // #include "src/network/proto/beacon.pb.h"
 #include "accumulator.h"
+#include "location.h"
+#include "ble_network.h"
 
 LOG_MODULE_DECLARE(lorawan_backend);
 
@@ -13,6 +15,8 @@ LOG_MODULE_DECLARE(lorawan_backend);
 bool encode_sys_data_message(uint8_t *buffer, size_t buffer_size, 
         size_t *message_len, struct system_data *data)
 {
+    struct location *loc = &data->location.location;
+
     EnvironTrackerUpload message = EnvironTrackerUpload_init_zero;
 
     pb_ostream_t stream = pb_ostream_from_buffer(buffer, buffer_size);
@@ -21,9 +25,9 @@ bool encode_sys_data_message(uint8_t *buffer, size_t buffer_size,
     
     message.has_location = true;
     message.location.location_source = data->location.source;
-    message.location.latitude = data->location.location.latitude;
-    message.location.longitude = data->location.location.longitude;
-    message.location.altitude = data->location.location.altitude;
+    message.location.latitude = location_float_to_int32(loc->latitude);
+    message.location.longitude = location_float_to_int32(loc->longitude);
+    message.location.altitude = (data->location.location.altitude * 100);
     
     // TODO: Correctly format data here
     message.has_environ = true;

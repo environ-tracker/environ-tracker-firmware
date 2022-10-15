@@ -1,34 +1,30 @@
 syntax = "proto3";
 
-enum Activity {
-    ACTIVITY_UNDEFINED = 0;
-    ACTIVITY_STAND = 1;
-    ACTIVITY_WALK = 2;
-    ACTIVITY_RUN = 3;
-    ACTIVITY_JUMP = 4;
-}
-
-enum LocationSource {
-    LOCATION_SOURCE_BLE = 0;
-    LOCATION_SOURCE_GNSS = 1;
-}
-
-message Location {
-    LocationSource location_source = 1;
-    uint32 latitude = 2;
-    uint32 longitude = 3;
-    uint32 altitude = 4;
-}
-
-message EnvironData {
-    int32 ambient_temp = 1;
-    uint32 pressure = 2;
-    uint32 humidity = 3;
-    uint32 tvoc = 4;
-    uint32 uv_index = 5;
-}
-
 message EnvironTrackerUpload {
+    message Location {
+        enum LocationSource {
+            LOCATION_SOURCE_BLE = 0;
+            LOCATION_SOURCE_GNSS = 1;
+        }        
+        LocationSource location_source = 1;
+        sint32 latitude = 2;
+        sint32 longitude = 3;
+        int32 altitude = 4;
+    }
+    enum Activity {
+        ACTIVITY_UNDEFINED = 0;
+        ACTIVITY_STAND = 1;
+        ACTIVITY_WALK = 2;
+        ACTIVITY_RUN = 3;
+        ACTIVITY_JUMP = 4;
+    }
+    message EnvironData {
+        int32 ambient_temp = 1;
+        uint32 pressure = 2;
+        uint32 humidity = 3;
+        uint32 tvoc = 4;
+        uint32 uv_index = 5;
+    }
     Location location = 1;
     Activity activity = 2;
     EnvironData environ = 3; 
