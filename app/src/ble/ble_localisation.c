@@ -20,8 +20,8 @@ LOG_MODULE_REGISTER(ble_localisation, LOG_LEVEL_INF);
 
 #define MAX_LOCALISATION_BEACONS 16
 
-#define SCAN_PERIOD 5000
-#define MAX_MISSED_SCAN_PERIODS 5
+#define SCAN_PERIOD K_SECONDS(5)
+#define MAX_MISSED_SCAN_PERIODS 20
 
 #define BLE_LOCALISATION_STACK_SIZE 1024
 #define BLE_LOCALISATION_PRIORITY 5
@@ -290,9 +290,7 @@ void ble_localisation(void *a, void *b, void *c)
     }
 
     while (1) {
-        k_msleep(SCAN_PERIOD);
-
-        // LOG_WRN("Scan period elapsed. Missed scans %d", missed_scans);
+        k_sleep(SCAN_PERIOD);
 
         /* If enough beacons have been found then run the localisation algo */
         beacons_found = k_mem_slab_num_used_get(&ibeacon_mem);
@@ -347,8 +345,8 @@ void ble_localisation(void *a, void *b, void *c)
                     continue;
                 }
 
-                /* Beacon was found */ // TODO: Extend to 1 || 2
-                if (beacons_found == 1) {
+                /* Beacon was found */
+                if (beacons_found == 1 || beacons_found == 2) {
                     /* Handle special case */
                     location.location = beacon->beacon.location;
                     data_valid = true;
@@ -369,8 +367,6 @@ void ble_localisation(void *a, void *b, void *c)
                 data_valid = false;
                 k_event_post(&data_events, LOCATION_DATA_PENDING);
             }
-            /* Send environmental data */
-            
         }
     }
 }
