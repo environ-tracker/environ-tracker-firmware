@@ -12,6 +12,16 @@
 LOG_MODULE_DECLARE(lorawan_backend);
 
 
+/**
+ * @brief Encodes system data into a protobuf
+ * 
+ * @param buffer Buffer to store the encoded protobuf
+ * @param buffer_size Size of protobuf buffer
+ * @param message_len Size of the encoded message
+ * @param data System data to encode
+ * @return true If the encoding was successful
+ * @return false If an error occured while encoding
+ */
 bool encode_sys_data_message(uint8_t *buffer, size_t buffer_size, 
         size_t *message_len, struct system_data *data)
 {
