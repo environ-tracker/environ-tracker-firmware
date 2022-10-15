@@ -165,8 +165,6 @@ void lorawan_backend(void *a, void *b, void *c)
         }
 
         LOG_INF("Data sent!");
-        
-        k_sleep(K_MINUTES(5));
     }
 }
 
