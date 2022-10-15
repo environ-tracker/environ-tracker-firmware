@@ -26,7 +26,7 @@ enum gui_screens {
 
 
 static int display_splash_screen(const struct device *dev);
-static int display_home_screen(const struct device *dev);
+static int display_home_screen(const struct device *dev, bool charging);
 static int display_environ_screen(const struct device *dev, 
         const struct environ_data *env_data);
 static int display_location_screen(const struct device *dev, 
@@ -45,6 +45,8 @@ void gui_thread(void *a, void *b, void *c)
     int rc;
     struct system_data sys_data = {0};
     enum gui_screens current_screen = SCREEN_HOME;
+    bool charging = false;
+    uint32_t events;
 
     LOG_INF("GUI started.");
 
@@ -91,7 +93,7 @@ void gui_thread(void *a, void *b, void *c)
     while (1) {
 
         /* Handle button controls */
-        uint32_t events = k_event_wait(&gpio_events, BUTTON_SHORT_EVENTS_ALL, 
+        events = k_event_wait(&gpio_events, BUTTON_SHORT_EVENTS_ALL, 
                 false, K_MSEC(50));
         if (events) {
             if (events & LEFT_BUTTON_SHORT_EVENT) {
@@ -111,6 +113,14 @@ void gui_thread(void *a, void *b, void *c)
             k_event_set_masked(&gpio_events, 0, BUTTON_SHORT_EVENTS_ALL);
         }
         
+        events = k_event_wait(&power_events, BAT_CHARGING_STATE_CHANGE_EVENT, 
+                false, K_MSEC(50));
+        if (events & BAT_CHARGING_STATE_CHANGE_EVENT) {
+            charging = !charging;
+
+            k_event_set_masked(&power_events, 0, 
+                    BAT_CHARGING_STATE_CHANGE_EVENT);
+        }
 
         if (current_screen == SCREEN_SETTINGS) {
             display_settings_screen(dev);
@@ -122,7 +132,7 @@ void gui_thread(void *a, void *b, void *c)
 
             switch (current_screen) {
             case SCREEN_HOME:
-                rc = display_home_screen(dev);
+                rc = display_home_screen(dev, charging);
                 break;
             case SCREEN_ENVIRON:
                 rc = display_environ_screen(dev, &sys_data.environ);
@@ -183,7 +193,7 @@ static int display_splash_screen(const struct device *dev)
     return 0;
 }
 
-static int display_home_screen(const struct device *dev)
+static int display_home_screen(const struct device *dev, bool charging)
 {
     const struct device *gauge_dev = DEVICE_DT_GET(DT_NODELABEL(lc709204f));
     struct timespec time;
@@ -224,6 +234,9 @@ static int display_home_screen(const struct device *dev)
         cfb_print(dev, buf, 0, 32);
     }
 
+    if (charging) {
+        cfb_print(dev, "Charging...", 0, 48);
+    }
 
     cfb_framebuffer_finalize(dev);
 

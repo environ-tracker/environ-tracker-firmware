@@ -5,7 +5,7 @@
 
 #include "file/file_common.h"
 #include "file/file_init.h"
-
+#include "controller.h"
 
 LOG_MODULE_REGISTER(controller);
 
@@ -15,6 +15,8 @@ LOG_MODULE_REGISTER(controller);
 
 
 K_EVENT_DEFINE(gpio_events);
+
+K_EVENT_DEFINE(power_events);
 
 
 static const struct gpio_dt_spec bat_chg_inidicator = GPIO_DT_SPEC_GET(
@@ -29,6 +31,8 @@ static void charging_inidicator_change(const struct device *dev, struct gpio_cal
 
     is_charging = !is_charging;
     LOG_INF("Battery %s charging", (is_charging) ? "is" : "has stopped");
+
+    k_event_post(&power_events, BAT_CHARGING_STATE_CHANGE_EVENT);
 }
 
 /**
