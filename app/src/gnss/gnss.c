@@ -56,6 +56,7 @@ void gnss_thread(void *a, void *b, void *c)
     char tx_buf[MINMEA_MAX_SENTENCE_LENGTH];
 	bool debug_output_enable = false;
 	uint32_t events;
+	int rc;
 
 	const struct device *rtc = DEVICE_DT_GET_ONE(microcrystal_rv3028);
 
@@ -150,7 +151,11 @@ void gnss_thread(void *a, void *b, void *c)
 					break;
 				}
 
-				minmea_gettime(&ts, &zda_frame.date, &zda_frame.time);
+				rc = minmea_gettime(&ts, &zda_frame.date, &zda_frame.time);
+				if (rc == -1) {
+					/* Invalid timespec */
+					continue;
+				}
 
 				clock_settime(CLOCK_REALTIME, &ts);
 				rv3028_rtc_set_time(rtc, ts.tv_sec);
