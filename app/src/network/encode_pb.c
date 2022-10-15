@@ -8,6 +8,7 @@
 #include "accumulator.h"
 #include "location.h"
 #include "ble_network.h"
+#include "environ.h"
 
 LOG_MODULE_DECLARE(lorawan_backend);
 
@@ -26,6 +27,7 @@ bool encode_sys_data_message(uint8_t *buffer, size_t buffer_size,
         size_t *message_len, struct system_data *data)
 {
     struct location *loc = &data->location.location;
+    struct environ_data *env = &data->environ;
 
     EnvironTrackerUpload message = EnvironTrackerUpload_init_zero;
 
@@ -38,13 +40,12 @@ bool encode_sys_data_message(uint8_t *buffer, size_t buffer_size,
     message.location.latitude = location_float_to_int32(loc->latitude);
     message.location.longitude = location_float_to_int32(loc->longitude);
     message.location.altitude = (data->location.location.altitude * 100);
-    
-    // TODO: Correctly format data here
+
     message.has_environ = true;
     message.environ.uv_index = data->environ.uv_index.val1;
-    message.environ.ambient_temp = data->environ.temp.val1;
-    message.environ.humidity = data->environ.humidity.val1;
-    message.environ.pressure = data->environ.press.val1;
+    message.environ.ambient_temp = sensor_value_to_double(&env->temp) * 100;
+    message.environ.humidity = sensor_value_to_double(&env->humidity) * 100;
+    message.environ.pressure = sensor_value_to_double(&env->press) * 1000;
 
 
     bool status = pb_encode(&stream, EnvironTrackerUpload_fields, &message);
