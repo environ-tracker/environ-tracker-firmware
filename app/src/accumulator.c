@@ -58,13 +58,10 @@ void accumulator_thread(void *a, void *b, void *c)
 
         LOG_INF("sending sys_data");
 
-        if (lorawan) {
-
-            // Send to lorawan_thread
-            while (k_msgq_put(&lorawan_msgq, &sys_data, K_MSEC(2)) != 0) {
-                k_msgq_purge(&lorawan_msgq);
-                LOG_DBG("lorawan_msgq has been purged");
-            }
+        /* Send to lorawan_thread */
+        while (k_msgq_put(&lorawan_msgq, &sys_data, K_MSEC(2)) != 0) {
+            k_msgq_purge(&lorawan_msgq);
+            LOG_DBG("lorawan_msgq has been purged");
         }
 
         /* Send to GUI thread */
