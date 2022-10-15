@@ -31,10 +31,13 @@ enum button_map {
 static const struct gpio_dt_spec button0 = GPIO_DT_SPEC_GET(SW0_NODE, gpios);
 static const struct gpio_dt_spec button1 = GPIO_DT_SPEC_GET(SW1_NODE, gpios);
 static const struct gpio_dt_spec button2 = GPIO_DT_SPEC_GET(SW2_NODE, gpios);
+static const struct gpio_dt_spec bat_chg_indicator = GPIO_DT_SPEC_GET(
+        DT_NODELABEL(bat_chrg), gpios);
 
 static struct gpio_callback button0_cb_data;
 static struct gpio_callback button1_cb_data;
 static struct gpio_callback button2_cb_data;
+static struct gpio_callback battery_charge_cb_data;
 
 
 /**
@@ -95,14 +98,30 @@ static void button_pressed(const struct device *dev, struct gpio_callback *cb,
 
 
 /**
+ * @brief Callback for when the charging indicator line changes logic level
+ */
+static void charging_indicator_change(const struct device *dev, 
+        struct gpio_callback *cb, uint32_t pins)
+{
+    static bool is_charging = false;
+
+    is_charging = !is_charging;
+    LOG_INF("Battery %s charging", (is_charging) ? "is" : "has stopped");
+
+    k_event_post(&power_events, BAT_CHARGING_STATE_CHANGE_EVENT);
+}
+
+
+/**
  * @brief Initialised a given GPIO as a double edge triggered interrupt source
  * 
  * @param gpio GPIO to initialise as interrupt source
+ * @param handler Callback handler for GPIO
  * @param callback Callback for the GPIO to call
  * @return 0 on success, else negative error code
  */
 static int init_gpio(const struct gpio_dt_spec *gpio, 
-        struct gpio_callback *callback)
+        gpio_callback_handler_t handler, struct gpio_callback *callback)
 {
     int ret;
 
@@ -125,7 +144,7 @@ static int init_gpio(const struct gpio_dt_spec *gpio,
         return ret;
     }
 
-    gpio_init_callback(callback, button_pressed, BIT(gpio->pin));
+    gpio_init_callback(callback, handler, BIT(gpio->pin));
     gpio_add_callback(gpio->port, callback);
 
     return 0;
@@ -140,9 +159,11 @@ int gpio_init(const struct device *dev)
 {
     int rc;
 
-    rc = init_gpio(&button0, &button0_cb_data);
-    rc |= init_gpio(&button1, &button1_cb_data);
-    rc |= init_gpio(&button2, &button2_cb_data);
+    rc = init_gpio(&button0, button_pressed, &button0_cb_data);
+    rc |= init_gpio(&button1, button_pressed, &button1_cb_data);
+    rc |= init_gpio(&button2, button_pressed, &button2_cb_data);
+    rc |= init_gpio(&bat_chg_indicator, charging_indicator_change, 
+            &battery_charge_cb_data);
     if (rc != 0) {
         LOG_ERR("Error while initialising buttons. (%d)", rc);
         return rc;
