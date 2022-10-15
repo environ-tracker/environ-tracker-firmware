@@ -131,8 +131,10 @@ void gnss_thread(void *a, void *b, void *c)
 					if (k_uptime_get() - last_gps_fix_time > GNSS_TIMEOUT) {
 						LOG_INF("GNSS timed out with no fix, sleeping...");
 						
+						sleep_gnss(0);
 						k_sleep(GNSS_SLEEP_TIME);
-						
+						wakeup_gnss();
+
 						last_gps_fix_time = k_uptime_get();
 						LOG_INF("GNSS woken");
 					}
