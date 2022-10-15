@@ -19,6 +19,9 @@ LOG_MODULE_REGISTER(gnss, CONFIG_LOG_DEFAULT_LEVEL);
 #define GNSS_STACK_SIZE 1024
 #define GNSS_PRIORITY   5
 
+#define GNSS_TIMEOUT 	5 * 60 * 1000
+#define GNSS_SLEEP_TIME	K_MINUTES(5)
+
 
 /* Local function prototypes */
 static int32_t set_gnss_low_power_poll(void);
@@ -56,6 +59,7 @@ void gnss_thread(void *a, void *b, void *c)
     char tx_buf[MINMEA_MAX_SENTENCE_LENGTH];
 	bool debug_output_enable = false;
 	uint32_t events;
+	int64_t last_gps_fix_time;
 	int rc;
 
 	const struct device *rtc = DEVICE_DT_GET_ONE(microcrystal_rv3028);
@@ -86,6 +90,7 @@ void gnss_thread(void *a, void *b, void *c)
 
 	location.source = LOCATION_GNSS;
 
+	last_gps_fix_time = k_uptime_get();
 
     LOG_INF("ZOE-M8Q UART setup");
 
@@ -122,8 +127,20 @@ void gnss_thread(void *a, void *b, void *c)
 					break;	
 				} else if (frame.fix_quality == 0) {
                     /* No fix, ignore message */
+
+					if (k_uptime_get() - last_gps_fix_time > GNSS_TIMEOUT) {
+						LOG_INF("GNSS timed out with no fix, sleeping...");
+						
+						k_sleep(GNSS_SLEEP_TIME);
+						
+						last_gps_fix_time = k_uptime_get();
+						LOG_INF("GNSS woken");
+					}
+
 					break;
 				}
+
+				last_gps_fix_time = k_uptime_get();
 
 				/* Store the location data in 1e7 degrees */
 				location.location.latitude = minmea_tocoord(&frame.latitude);
