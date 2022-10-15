@@ -1,6 +1,8 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/uart.h>
+#include <zephyr/posix/time.h>
+#include <zephyr/drivers/rtc/rtc_rv3028.h>
 #include <zephyr/logging/log.h>
 
 #include "gnss/gnss.h"
@@ -20,6 +22,7 @@ LOG_MODULE_REGISTER(gnss, CONFIG_LOG_DEFAULT_LEVEL);
 
 /* Local function prototypes */
 static int32_t set_gnss_low_power_poll(void);
+static int32_t set_gnss_nmea_zda_enable(void);
 static int32_t sleep_gnss(uint32_t duration);
 static inline void wakeup_gnss(void);
 void serial_cb(const struct device *dev, void *user_data);
@@ -54,8 +57,14 @@ void gnss_thread(void *a, void *b, void *c)
 	bool debug_output_enable = false;
 	uint32_t events;
 
+	const struct device *rtc = DEVICE_DT_GET_ONE(microcrystal_rv3028);
 
     LOG_INF("GNSS thread started");
+
+	if (!device_is_ready(rtc)) {
+		LOG_ERR("%s: Device not ready.", rtc->name);
+		return;
+	}
 
 	/* Check if GNSS receiver UART is enabled */
     if (!device_is_ready(zoe_uart_dev)) {
@@ -65,6 +74,9 @@ void gnss_thread(void *a, void *b, void *c)
 
     /* Set the GNSS into 1Hz super-efficient power mode */
 	set_gnss_low_power_poll();
+
+	/* Enable NMEA ZDA */
+	set_gnss_nmea_zda_enable();
 
     /* Configure interrupt and callback to receive data */
 	uart_irq_callback_user_data_set(zoe_uart_dev, serial_cb, NULL);
@@ -129,6 +141,21 @@ void gnss_thread(void *a, void *b, void *c)
 				k_event_post(&data_events, LOCATION_DATA_PENDING);
 
 				break;
+			case MINMEA_SENTENCE_ZDA:
+				struct minmea_sentence_zda zda_frame;
+				struct timespec ts;
+
+				if (!minmea_parse_zda(&zda_frame, tx_buf)) {
+					LOG_WRN("Issue parsing NMEA ZDA message");
+					break;
+				}
+
+				minmea_gettime(&ts, &zda_frame.date, &zda_frame.time);
+
+				clock_settime(CLOCK_REALTIME, &ts);
+				rv3028_rtc_set_time(rtc, ts.tv_sec);
+
+				LOG_INF("Clock set from GPS ZDA message");
 			default:
 				/* We don't care about these messages */
 			}
@@ -160,6 +187,32 @@ static int32_t set_gnss_low_power_poll(void)
 	}
 
     /* Send UBX message to GNSS receiver */
+	for (int i = 0; i < sizeof(encodedMessage); ++i) {
+		uart_poll_out(zoe_uart_dev, encodedMessage[i]);
+	}
+
+	return 0;
+}
+
+/**
+ * @brief Enable the NMEA ZDA sentence in the GPS output
+ * 
+ * @return 0 on success, else a negative error code
+ */
+static int32_t set_gnss_nmea_zda_enable(void)
+{
+	char message[3] = {0xf0, 0x08, 60};
+	char encodedMessage[U_UBX_PROTOCOL_OVERHEAD_LENGTH_BYTES + 3];
+	int32_t ret;
+
+	/* Encode the UBX-CFG-MSG message */
+	ret = uUbxProtocolEncode(0x06, 0x01, message, sizeof(message), 
+			encodedMessage);
+	if (ret < 0) {
+		LOG_ERR("set_gnss_nmea_zda_enable: Error encoding packet. (%d)",ret);
+		return ret;
+	}
+
 	for (int i = 0; i < sizeof(encodedMessage); ++i) {
 		uart_poll_out(zoe_uart_dev, encodedMessage[i]);
 	}
