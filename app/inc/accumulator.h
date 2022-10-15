@@ -4,7 +4,6 @@
 #include <zephyr/kernel.h>
 
 #include "environ.h"
-// #include "ble_network.h"
 #include "imu.h"
 #include "location.h"
 

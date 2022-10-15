@@ -64,32 +64,32 @@ int read_file(char *fname, uint8_t *data, uint32_t len)
     }
 
     fs_file_t_init(&file);
-	rc = fs_open(&file, abs_fname, FS_O_READ);
-	if (rc < 0) {
-		LOG_ERR("FAIL: open %s: %d", fname, rc);
-		goto out2;
-	}
+    rc = fs_open(&file, abs_fname, FS_O_READ);
+    if (rc < 0) {
+        LOG_ERR("FAIL: open %s: %d", fname, rc);
+        goto out2;
+    }
 
-	rc = fs_read(&file, data, len);
-	if (rc < 0) {
-		LOG_ERR("FAIL: read %s: [rd:%d]", fname, rc);
-		goto out;
-	}
+    rc = fs_read(&file, data, len);
+    if (rc < 0) {
+        LOG_ERR("FAIL: read %s: [rd:%d]", fname, rc);
+        goto out;
+    }
 
-	LOG_INF("%s read %d bytes)\n", fname, rc);
+    LOG_INF("%s read %d bytes)\n", fname, rc);
 
 out:
-	ret = fs_close(&file);
-	if (ret < 0) {
-		LOG_ERR("FAIL: close %s: %d", fname, ret);
+    ret = fs_close(&file);
+    if (ret < 0) {
+        LOG_ERR("FAIL: close %s: %d", fname, ret);
         k_mutex_unlock(&fs_mutex);
-		return ret;
-	}
+        return ret;
+    }
 
 out2:
     k_mutex_unlock(&fs_mutex);
 
-	return (rc < 0 ? rc : 0);
+    return (rc < 0 ? rc : 0);
 }
 
 int write_file(char *fname, uint8_t *data, uint32_t len)
@@ -108,11 +108,11 @@ int write_file(char *fname, uint8_t *data, uint32_t len)
     }
 
     fs_file_t_init(&file);
-	rc = fs_open(&file, abs_fname, FS_O_CREATE | FS_O_WRITE);
-	if (rc < 0) {
-		LOG_ERR("FAIL: open %s: %d", fname, rc);
-		goto out2;
-	}
+    rc = fs_open(&file, abs_fname, FS_O_CREATE | FS_O_WRITE);
+    if (rc < 0) {
+        LOG_ERR("FAIL: open %s: %d", fname, rc);
+        goto out2;
+    }
 
     rc = fs_seek(&file, 0, FS_SEEK_SET);
     if (rc < 0) {
@@ -121,24 +121,24 @@ int write_file(char *fname, uint8_t *data, uint32_t len)
     }
 
     rc = fs_write(&file, data, len);
-	if (rc < 0) {
-		LOG_ERR("FAIL: write %s: %d", fname, rc);
-		goto out;
-	}
+    if (rc < 0) {
+        LOG_ERR("FAIL: write %s: %d", fname, rc);
+        goto out;
+    }
 
     LOG_INF("%s wrote %d bytes", fname, rc);
 
 out:
-	ret = fs_close(&file);
-	if (ret < 0) {
-		LOG_ERR("FAIL: close %s: %d", fname, ret);
-		k_mutex_unlock(&fs_mutex);
+    ret = fs_close(&file);
+    if (ret < 0) {
+        LOG_ERR("FAIL: close %s: %d", fname, ret);
+        k_mutex_unlock(&fs_mutex);
         return ret;
-	}
+    }
 out2:
     k_mutex_unlock(&fs_mutex);
 
-	return (rc < 0 ? rc : 0);
+    return (rc < 0 ? rc : 0);
 }
 
 int search_directory(char *dir_name, char *file_name)

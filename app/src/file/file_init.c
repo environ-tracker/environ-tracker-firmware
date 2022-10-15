@@ -23,28 +23,28 @@ extern struct fs_mount_t *mp;
 #ifdef CONFIG_APP_FLASH_ERASE
 int storage_flash_erase(unsigned int id)
 {
-	const struct flash_area *pfa;
-	int rc;
+    const struct flash_area *pfa;
+    int rc;
 
-	rc = flash_area_open(id, &pfa);
-	if (rc < 0) {
-		LOG_ERR("FAIL: unable to find flash area %u: %d\n",
-			id, rc);
-		return rc;
-	}
+    rc = flash_area_open(id, &pfa);
+    if (rc < 0) {
+        LOG_ERR("FAIL: unable to find flash area %u: %d\n",
+            id, rc);
+        return rc;
+    }
 
-	LOG_PRINTK("Area %u at 0x%x on %s for %u bytes\n",
-		   id, (unsigned int)pfa->fa_off, pfa->fa_dev_name,
-		   (unsigned int)pfa->fa_size);
+    LOG_PRINTK("Area %u at 0x%x on %s for %u bytes\n",
+           id, (unsigned int)pfa->fa_off, pfa->fa_dev_name,
+           (unsigned int)pfa->fa_size);
 
-	/* Optional wipe flash contents */
-	if (IS_ENABLED(CONFIG_APP_WIPE_STORAGE)) {
-		rc = flash_area_erase(pfa, 0, pfa->fa_size);
-		LOG_ERR("Erasing flash area ... %d", rc);
-	}
+    /* Optional wipe flash contents */
+    if (IS_ENABLED(CONFIG_APP_WIPE_STORAGE)) {
+        rc = flash_area_erase(pfa, 0, pfa->fa_size);
+        LOG_ERR("Erasing flash area ... %d", rc);
+    }
 
-	flash_area_close(pfa);
-	return rc;
+    flash_area_close(pfa);
+    return rc;
 }
 #endif /* CONFIG_APP_FLASH_ERASE */
 
