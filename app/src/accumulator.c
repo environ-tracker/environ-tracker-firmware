@@ -56,8 +56,6 @@ void accumulator_thread(void *a, void *b, void *c)
             continue;
         }
 
-        LOG_WRN("alt: %f", sys_data.location.location.altitude);
-
         LOG_INF("sending sys_data");
 
         if (lorawan) {
