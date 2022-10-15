@@ -16,6 +16,7 @@ LOG_MODULE_REGISTER(gui, CONFIG_LOG_DEFAULT_LEVEL);
 #define GUI_THREAD_PRIORITY     8
 
 
+/* GUI screen numberings */
 enum gui_screens {
     SCREEN_HOME = 0,
     SCREEN_ENVIRON,
@@ -40,6 +41,9 @@ K_THREAD_DEFINE(gui, GUI_THREAD_STACK_SIZE, gui_thread, NULL, NULL, NULL,
         GUI_THREAD_PRIORITY, 0, 0);
 
 
+/**
+ * @brief Thread to handle displaying device GUI
+ */
 void gui_thread(void *a, void *b, void *c)
 {
     enum gui_screens current_screen = SCREEN_HOME;
@@ -152,6 +156,13 @@ void gui_thread(void *a, void *b, void *c)
 
 }
 
+
+/**
+ * @brief Displays the GUI splash screen.
+ * 
+ * @param dev Display to show splash screen on
+ * @return 0 on success, else negative error code
+ */
 static int display_splash_screen(const struct device *dev)
 {
     int rc;
@@ -190,6 +201,14 @@ static int display_splash_screen(const struct device *dev)
     return 0;
 }
 
+
+/**
+ * @brief Displays the home screen.
+ * 
+ * @param dev Display to show splash screen on
+ * @param charging Battery charging status
+ * @return 0 on success, else negative error code
+ */
 static int display_home_screen(const struct device *dev, bool charging)
 {
     const struct device *gauge_dev = DEVICE_DT_GET(DT_NODELABEL(lc709204f));
@@ -240,6 +259,14 @@ static int display_home_screen(const struct device *dev, bool charging)
     return 0;
 }
 
+
+/**
+ * @brief Displays the systems environmental data.
+ * 
+ * @param dev Display to show splash screen on
+ * @param env_data Environmental data to display
+ * @return 0 on success, else negative error code
+ */
 static int display_environ_screen(const struct device *dev, 
         const struct environ_data *env_data)
 {
@@ -284,6 +311,15 @@ static int display_environ_screen(const struct device *dev,
     return 0;
 }
 
+
+/**
+ * @brief Displays the systems location data.
+ * 
+ * @param dev Display to show splash screen on
+ * @param location Location data to display
+ * @param source Source of the location data
+ * @return 0 on success, else negative error code
+ */
 static int display_location_screen(const struct device *dev, 
         const struct location *location, enum location_source source)
 {
@@ -323,6 +359,15 @@ static int display_location_screen(const struct device *dev,
     return 0;
 }
 
+
+/**
+ * @brief Displays the settings screen
+ * 
+ * TODO: Fill the functionality
+ * 
+ * @param dev Display to show splash screen on
+ * @return 0 on success, else negative error code
+ */
 static int display_settings_screen(const struct device *dev)
 {
     int rc;
@@ -336,6 +381,13 @@ static int display_settings_screen(const struct device *dev)
     return rc;
 }
 
+
+/**
+ * @brief Get the screen name
+ * 
+ * @param screen The screen number to retrieve the name of
+ * @return The screens name
+ */
 static const char * get_screen_name(enum gui_screens screen)
 {
     static const char *names[] = {"home", "environ", "location", "settings"};
