@@ -9,7 +9,7 @@ enum location_source {
 };
 
 /**
- * @brief A location in 1e7 degrees
+ * @brief A location
  */
 struct location {
     float latitude;
@@ -23,5 +23,16 @@ struct location_wrapper {
 };
 
 extern struct k_msgq location_msgq;
+
+/**
+ * @brief Converts the given measurement from a float into an int32 given in 
+ *        1e6 degrees.
+ * 
+ * @param measurement Measurement to convert
+ * @return measurement in units of 1e6 degrees
+ */
+inline int32_t location_float_to_int32(float measurement) {
+    return (int32_t)(measurement * 10 * 6);
+}
 
 #endif /* LOCATION_H */
