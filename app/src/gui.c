@@ -291,27 +291,36 @@ static int display_location_screen(const struct device *dev,
         const struct location *location, enum location_source source)
 {
     int rc;
-    char buf[100];
-    
+    char buf[50];
+
     cfb_framebuffer_clear(dev, false);
 
-    snprintk(buf, sizeof(buf), "LON %f", location->longitude);
+    rc = cfb_print(dev, (source == LOCATION_BLE) ? "BLE" : "GPS", 48, 0);
+    if (rc != 0) {
+        return rc;
+    }
 
-    rc = cfb_print(dev, buf, 0, 0);
-
-    snprintk(buf, sizeof(buf), "LAT %f", location->latitude);
+    snprintk(buf, sizeof(buf), "LAT %.4f", location->latitude);
 
     rc = cfb_print(dev, buf, 0, 16);
+    if (rc != 0) {
+        return rc;
+    }
+
+    snprintk(buf, sizeof(buf), "LON %.4f", location->longitude);
+
+    rc = cfb_print(dev, buf, 0, 32);
+    if (rc != 0) {
+        return rc;
+    }
 
     snprintk(buf, sizeof(buf), "ALT %.1f", location->altitude);
 
-    rc = cfb_print(dev, buf, 0, 32);
-
-    snprintk(buf, sizeof(buf), "Source: %s", 
-            (source == LOCATION_BLE) ? "BLE" : "GPS");
-
     rc = cfb_print(dev, buf, 0, 48);
-    
+    if (rc != 0) {
+        return rc;
+    }
+
     cfb_framebuffer_finalize(dev);
 
     return 0;
