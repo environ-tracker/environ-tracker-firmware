@@ -42,11 +42,12 @@ K_THREAD_DEFINE(gui, GUI_THREAD_STACK_SIZE, gui_thread, NULL, NULL, NULL,
 
 void gui_thread(void *a, void *b, void *c)
 {
-    int rc;
-    struct system_data sys_data = {0};
     enum gui_screens current_screen = SCREEN_HOME;
+    struct system_data sys_data = {0};
     bool charging = false;
     uint32_t events;
+    int rc;
+
 
     LOG_INF("GUI started.");
 
@@ -84,11 +85,7 @@ void gui_thread(void *a, void *b, void *c)
     if (rc != 0) {
         LOG_ERR("Error (%d) while displaying splash screen", rc);
     }
-
-    rc = display_home_screen(dev);
-    if (rc != 0) {
-        LOG_ERR("Error (%d) while displaying home screen", rc);
-    }
+    
 
     while (1) {
 
@@ -247,11 +244,11 @@ static int display_environ_screen(const struct device *dev,
         const struct environ_data *env_data)
 {
     int rc;
-    char buf[100];
+    char buf[50];
 
     cfb_framebuffer_clear(dev, false);
 
-    snprintk(buf, sizeof(buf), "%g C", 
+    snprintk(buf, sizeof(buf), "%.2f C", 
             sensor_value_to_double(&env_data->temp));
 
     rc = cfb_print(dev, buf, 0, 0);
@@ -259,7 +256,7 @@ static int display_environ_screen(const struct device *dev,
         return rc;
     }
 
-    snprintk(buf, sizeof(buf), "%g %%RH", 
+    snprintk(buf, sizeof(buf), "%.2f %%RH", 
             sensor_value_to_double(&env_data->humidity));
 
     rc = cfb_print(dev, buf, 0, 16);
@@ -267,7 +264,7 @@ static int display_environ_screen(const struct device *dev,
         return rc;
     }
 
-    snprintk(buf, sizeof(buf), "%g kPa", 
+    snprintk(buf, sizeof(buf), "%.3f kPa", 
             sensor_value_to_double(&env_data->press));
 
     rc = cfb_print(dev, buf, 0, 32);
