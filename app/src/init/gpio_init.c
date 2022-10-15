@@ -1,7 +1,6 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
-
 #include <zephyr/logging/log.h>
 
 #include "controller.h"
@@ -10,6 +9,7 @@ LOG_MODULE_DECLARE(init);
 
 
 #define GPIO_INIT_INIT_PRIORITY 90
+
 
 #define SW0_NODE    DT_ALIAS(sw0)
 #define SW1_NODE    DT_ALIAS(sw1)
@@ -58,6 +58,7 @@ static enum button_map map_pin(uint32_t pin)
         return BUTTON_UNDEFINED;
     }
 }
+
 
 /**
  * @brief Callback for system buttons
