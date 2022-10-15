@@ -30,7 +30,7 @@ static void data_trig_handler(const struct device *dev,
 {
     struct imu_data data;
     static int trig_counter = 0;
-    int ret;
+    // int ret;
 
     trig_counter++;
 
@@ -65,6 +65,7 @@ static void data_trig_handler(const struct device *dev,
     // }
 }
 
+// TODO: Implement
 static void tap_trig_handler(const struct device *dev, 
         const struct sensor_trigger *trig)
 {
@@ -119,8 +120,8 @@ void imu_thread(void *a, void *b, void *c)
         return;
     }
 
-    struct imu_data data[IMU_ODR];
-    enum activity activity = ACTIVITY_UNDEFINED;
+    // struct imu_data data[IMU_ODR];
+    // enum activity activity = ACTIVITY_UNDEFINED;
 
     while (1) {
         
