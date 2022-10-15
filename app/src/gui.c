@@ -30,7 +30,7 @@ static int display_home_screen(const struct device *dev);
 static int display_environ_screen(const struct device *dev, 
         const struct environ_data *env_data);
 static int display_location_screen(const struct device *dev, 
-        const struct system_data *sys_data);
+        const struct location *location, enum location_source source);
 static int display_settings_screen(const struct device *dev);
 static const char * get_screen_name(enum gui_screens screen);
 void gui_thread(void *a, void *b, void *c);
@@ -122,16 +122,22 @@ void gui_thread(void *a, void *b, void *c)
 
             switch (current_screen) {
             case SCREEN_HOME:
-                display_home_screen(dev);
+                rc = display_home_screen(dev);
                 break;
             case SCREEN_ENVIRON:
-                display_environ_screen(dev, &sys_data.environ);
+                rc = display_environ_screen(dev, &sys_data.environ);
                 break;
             case SCREEN_LOCATION:
-                display_location_screen(dev, &sys_data);
+                rc = display_location_screen(dev, &sys_data.location.location, 
+                        sys_data.location.source);
                 break;
             default:
                 break;
+            }
+
+            if (rc != 0) {
+                LOG_ERR("Error (%d) displaying %s screen", rc, 
+                        get_screen_name(current_screen));
             }
         }
         
@@ -269,16 +275,29 @@ static int display_environ_screen(const struct device *dev,
 }
 
 static int display_location_screen(const struct device *dev, 
-        const struct system_data *sys_data)
+        const struct location *location, enum location_source source)
 {
     int rc;
     char buf[100];
 
     cfb_framebuffer_clear(dev, false);
 
-    snprintk(buf, sizeof(buf), "X: %d", sys_data->location.location.longitude);
+    snprintk(buf, sizeof(buf), "LON: %d", location->longitude);
 
     rc = cfb_print(dev, buf, 0, 0);
+
+    snprintk(buf, sizeof(buf), "LAT: %d", location->latitude);
+
+    rc = cfb_print(dev, buf, 0, 16);
+
+    snprintk(buf, sizeof(buf), "ALT: %d", location->altitude);
+
+    rc = cfb_print(dev, buf, 0, 32);
+
+    snprintk(buf, sizeof(buf), "From %s", 
+            (source == LOCATION_BLE) ? "BLE" : "GPS");
+
+    rc = cfb_print(dev, buf, 0, 48);
     
     cfb_framebuffer_finalize(dev);
 
