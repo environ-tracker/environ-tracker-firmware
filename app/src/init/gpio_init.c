@@ -42,9 +42,9 @@ static enum button_map map_pin(uint32_t pin)
     if (pin == BIT(button0.pin)) {
         return BUTTON_LEFT;
     } else if (pin == BIT(button1.pin)) {
-        return BUTTON_RIGHT;
-    } else if (pin == BIT(button2.pin)) {
         return BUTTON_SELECT;
+    } else if (pin == BIT(button2.pin)) {
+        return BUTTON_RIGHT;
     } else {
         return BUTTON_UNDEFINED;
     }
@@ -54,7 +54,9 @@ static enum button_map map_pin(uint32_t pin)
 static void button_pressed(const struct device *dev, struct gpio_callback *cb, 
         uint32_t pins)
 {
+    static const uint8_t pin_phy[3] = {button0.pin, button2.pin, button1.pin};
     static int64_t first_edge_time[3] = {0};
+
     int pin = map_pin(pins);
 
     if (pin == BUTTON_UNDEFINED) {
@@ -62,13 +64,12 @@ static void button_pressed(const struct device *dev, struct gpio_callback *cb,
         return;
     }
 
-    if (gpio_pin_get(dev, pin)) {
+    if (gpio_pin_get(dev, pin_phy[pin])) {
         LOG_INF("Button press first edge, pin: %d", pin);
 
         first_edge_time[pin] = k_uptime_get();
         return;
     } else {
-        
 
         int64_t pulse_time = k_uptime_delta(&first_edge_time[pin]);
         
