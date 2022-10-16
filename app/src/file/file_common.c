@@ -243,7 +243,7 @@ int search_file(char *fname, uint8_t *data, uint32_t len, uint32_t offset,
 
         if (memcmp(line, data, len) == 0) {
             // data was found in the file
-            LOG_HEXDUMP_INF(data, len, "was found in file");
+            LOG_HEXDUMP_INF(line, block_len, "Matched data:");
             memcpy(block, line, block_len);
             break;
         }
