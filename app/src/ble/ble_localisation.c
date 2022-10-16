@@ -122,7 +122,7 @@ static int list_contains_ibeacon(struct ibeacon_packet *ibeacon)
  */
 static int add_ibeacon_to_list(struct ibeacon_packet *ibeacon)
 {
-    struct ibeacon_packet *tmp;
+    struct ibeacon_packet *tmp = NULL;
     int ret;
 
     ret = k_mutex_lock(&ibeacon_list_mutex, K_MSEC(1));
@@ -132,7 +132,7 @@ static int add_ibeacon_to_list(struct ibeacon_packet *ibeacon)
 
     /* Allocate memory for ibeacon_packet */
     ret = k_mem_slab_alloc(&ibeacon_mem, (void **)&tmp, K_NO_WAIT);
-    if (ret != 0) {
+    if ((ret != 0) || (tmp == NULL)) {
         LOG_ERR("add_ibeacon_to_list: Packet couldn't be allocated. (%d)", ret);
 
         k_mutex_unlock(&ibeacon_list_mutex);
