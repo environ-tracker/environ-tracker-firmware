@@ -23,7 +23,7 @@ LOG_MODULE_REGISTER(ble_localisation, LOG_LEVEL_INF);
 #define SCAN_PERIOD K_SECONDS(5)
 #define MAX_MISSED_SCAN_PERIODS 20
 
-#define BLE_LOCALISATION_STACK_SIZE 1024
+#define BLE_LOCALISATION_STACK_SIZE 2048
 #define BLE_LOCALISATION_PRIORITY 5
 
 /* This delay is so that BLE logs can be seen from the shell */
