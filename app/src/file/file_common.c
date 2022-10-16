@@ -185,7 +185,7 @@ int search_directory(char *dir_name, char *file_name)
 
         // TODO: change to strncmp
         if (entry.type == FS_DIR_ENTRY_FILE && 
-                (strcmp(entry.name, file_name) == 0)) {
+                (strncmp(entry.name, file_name, FILE_NAME_LEN) == 0)) {
             ret = 0;
             break;
         }
