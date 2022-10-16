@@ -17,7 +17,7 @@ LOG_MODULE_REGISTER(ble_network);
 
 
 struct network_cache_entry {
-    struct bt_uuid entry;
+    struct bt_uuid_128 entry;
     time_t last_access;
 };
 
@@ -41,7 +41,7 @@ static int network_is_cached(const struct bt_uuid *network)
     }
 
     for (int i = 0; i < network_cache.number_cached; ++i) {
-        if (bt_uuid_cmp(&network_cache.cache[i].entry, network) == 0) {
+        if (bt_uuid_cmp(&network_cache.cache[i].entry.uuid, network) == 0) {
             clock_gettime(CLOCK_REALTIME, &time);
             
             network_cache.cache[i].last_access = time.tv_sec;
@@ -67,7 +67,7 @@ static int add_network_to_cache(const struct bt_uuid *network)
     }
 
     if (network_cache.number_cached < MAX_CACHED_NETWORKS) {
-        bt_uuid_create(&network_cache.cache[network_cache.number_cached].entry, 
+        bt_uuid_create(&network_cache.cache[network_cache.number_cached].entry.uuid, 
                 BT_UUID_128(network)->val, BT_UUID_SIZE_128);
 
         network_cache.number_cached++;
@@ -81,7 +81,7 @@ static int add_network_to_cache(const struct bt_uuid *network)
             }
         }
 
-        bt_uuid_create(&network_cache.cache[pos].entry, 
+        bt_uuid_create(&network_cache.cache[pos].entry.uuid, 
                 BT_UUID_128(network)->val, BT_UUID_SIZE_128);
     }
 
