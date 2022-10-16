@@ -160,7 +160,7 @@ int search_directory(char *dir_name, char *file_name)
 
     LOG_DBG("dir_name: %s, file_name: %s", dir_name, file_name);
 
-    if ((rc = k_mutex_lock(&fs_mutex, K_FOREVER))) {
+    if ((rc = k_mutex_lock(&fs_mutex, K_SECONDS(1)))) {
         return rc;
     }
 
