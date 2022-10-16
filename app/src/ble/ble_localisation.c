@@ -328,13 +328,15 @@ void ble_localisation(void *a, void *b, void *c)
         } else {
             missed_scans = 0;
 
-            k_mutex_lock(&ibeacon_list_mutex, K_MSEC(1));
+            if (k_mutex_lock(&ibeacon_list_mutex, K_MSEC(1))) {
+                continue;
+            }
             while ((node = sys_slist_get(&ibeacon_list)) != NULL) {
                 beacon = SYS_SLIST_CONTAINER(node, beacon, next);
                 
                 // DEBUG
-                LOG_INF("Beacon ID %u, rssi %d", beacon->beacon.id, 
-                        beacon->rssi);
+                LOG_INF("Beacon ID %u, rssi %d, lat: %f, long: %f", beacon->beacon.id, 
+                        beacon->rssi, beacon->beacon.location.longitude, beacon->beacon.location.latitude);
             
 
                 /* Check if beacon was found */
