@@ -152,6 +152,7 @@ static int add_ibeacon_to_list(struct ibeacon_packet *ibeacon)
 static void filter_ibeacon(void *a, void *b, void *c)
 {
     struct ibeacon_packet ibeacon;
+    int ret;
 
     while (1) {
 
@@ -163,13 +164,21 @@ static void filter_ibeacon(void *a, void *b, void *c)
             continue;
         }
 
-        /* ibeacon is part of a supported network, so add to list if not already */
+        /* 
+         * iBeacon is part of a supported network, so add to list if not 
+         * already 
+         */
         if (list_contains_ibeacon(&ibeacon) == 0) {
             
             
-            int ret = find_beacon(&ibeacon.beacon);
-            if (ret) {
-                LOG_WRN("Beacon not found, should request");
+            ret = find_beacon(&ibeacon.beacon);
+            if (ret == -ESRCH) {
+                LOG_INF("filter_ibeacon: Beacon not found, should request");
+                
+                // TODO: request via LoRaWAN
+                continue;
+            } else if (ret < 0) {
+                LOG_ERR("filter_ibeacon: Problem finding beacon. (%d)", ret);
                 continue;
             }
 
