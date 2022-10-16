@@ -208,7 +208,7 @@ static bool parse_ad(struct bt_data *data, void *user_data)
     }
 
     /* iBeacons packets always start with 0x004c0215 */
-    if (sys_cpu_to_be32(((uint32_t *)data->data)[0]) != 0x004c0215) {
+    if (sys_get_be32(data->data) != 0x004c0215) {
         user_data = NULL;
         return false;
     }
@@ -223,8 +223,8 @@ static bool parse_ad(struct bt_data *data, void *user_data)
     }
 
     /* Ensure endianness */
-    uint16_t major = sys_be16_to_cpu(*(uint16_t *)&data->data[20]);
-    uint16_t minor = sys_be16_to_cpu(*(uint16_t *)&data->data[22]);
+    uint16_t major = sys_get_be16(&data->data[20]);
+    uint16_t minor = sys_get_be16(&data->data[22]);
     
     ad_data->beacon.id = BEACON_ID_INIT(major, minor);
     ad_data->tx_power = data->data[24];
