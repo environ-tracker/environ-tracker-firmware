@@ -215,7 +215,7 @@ int search_file(char *fname, uint8_t *data, uint32_t len, uint32_t offset,
         return rc;
     }
 
-    if ((rc = k_mutex_lock(&fs_mutex, K_FOREVER))) {
+    if ((rc = k_mutex_lock(&fs_mutex, K_SECONDS(1)))) {
         return rc;
     }
 
