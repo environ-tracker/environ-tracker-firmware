@@ -41,9 +41,6 @@ static const struct bt_le_scan_param scan_params = {
 /* List to append ibeacon data to */
 static sys_slist_t ibeacon_list;
 
-/* Work item to filter scanned ibeacons */
-static struct k_work ibeacon_filter_work;
-
 /* Mutex to protect access to ibeacon_list */
 static struct k_mutex ibeacon_list_mutex;
 
@@ -152,28 +149,41 @@ static int add_ibeacon_to_list(struct ibeacon_packet *ibeacon)
 /**
  * @brief Filter an ibeacon based on if it belongs to a supported network
  */
-static void filter_ibeacon(struct k_work *work)
+static void filter_ibeacon(void *a, void *b, void *c)
 {
     struct ibeacon_packet ibeacon;
 
-    if (k_msgq_get(&ibeacon_msgq, &ibeacon, K_NO_WAIT) != 0) {
-        return;
-    }
+    while (1) {
 
-    if (!is_supported_network(&ibeacon.beacon.network.uuid)) {
-        return;
-    }
-
-    /* ibeacon is part of a supported network, so add to list if not already */
-    if (list_contains_ibeacon(&ibeacon) == 0) {
-        if (add_ibeacon_to_list(&ibeacon) != 0) {
-            return;
+        if (k_msgq_get(&ibeacon_msgq, &ibeacon, K_FOREVER) != 0) {
+            continue;
         }
-        
-        LOG_INF("filter_ibeacon: Added beacon: id: %d to list", 
-                ibeacon.beacon.id);
+
+        if (!is_supported_network(&ibeacon.beacon.network.uuid)) {
+            continue;
+        }
+
+        /* ibeacon is part of a supported network, so add to list if not already */
+        if (list_contains_ibeacon(&ibeacon) == 0) {
+            
+            
+            int ret = find_beacon(&ibeacon.beacon);
+            if (ret) {
+                LOG_WRN("Beacon not found, should request");
+                continue;
+            }
+
+            if (add_ibeacon_to_list(&ibeacon) != 0) {
+                continue;
+            }
+
+            LOG_INF("filter_ibeacon: Added beacon: id: %d to list", 
+                    ibeacon.beacon.id);
+        }
     }
 }
+
+K_THREAD_DEFINE(filter, 4096, filter_ibeacon, NULL, NULL, NULL, 3, 0, 0);
 
 /**
  * @brief Parses the input data to see if it is an iBeacon packet. If it is,
@@ -252,8 +262,9 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
     beacon_data->discovered_time = discovered_time.tv_sec;
 
     /* Add the ibeacon to the queue and submit filter work */
-    k_msgq_put(&ibeacon_msgq, beacon_data, K_MSEC(10));
-    k_work_submit(&ibeacon_filter_work);
+    if (k_msgq_put(&ibeacon_msgq, beacon_data, K_MSEC(10))) {
+        return;
+    }
 }
 
 /**
@@ -270,10 +281,10 @@ void ble_localisation(void *a, void *b, void *c)
         .location = {0}
     };
 
+
     sys_slist_init(&ibeacon_list);
     k_mutex_init(&ibeacon_list_mutex);
 
-    k_work_init(&ibeacon_filter_work, filter_ibeacon);
 
     ret = bt_enable(NULL);
     if (ret) {
