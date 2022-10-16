@@ -369,7 +369,9 @@ void ble_localisation(void *a, void *b, void *c)
 
                 k_mem_slab_free(&ibeacon_mem, (void **)&beacon);
             }
-            k_mutex_unlock(&ibeacon_list_mutex);
+            if (k_mutex_unlock(&ibeacon_list_mutex)) {
+                LOG_WRN("Error unlocking mutex");
+            }
 
             if (data_valid) {
                 while (k_msgq_put(&location_msgq, &location, K_NO_WAIT) != 0) {
