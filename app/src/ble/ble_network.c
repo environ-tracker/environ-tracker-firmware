@@ -127,7 +127,7 @@ int find_beacon(struct ibeacon *beacon)
             FILE_NAME_LEN - position);
 
     ret = search_file(network_file, (uint8_t *)&beacon->id, sizeof(beacon->id), 
-            0, buf, sizeof(struct ibeacon_file_info));
+            0, (uint8_t *)&info, sizeof(struct ibeacon_file_info));
     if (ret != 0) {
         return ret;
     }
