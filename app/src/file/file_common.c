@@ -3,11 +3,11 @@
 #include <zephyr/kernel.h>
 #include <zephyr/fs/fs.h>
 #include <zephyr/fs/littlefs.h>
-
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(file, LOG_LEVEL_INF);
 
 #include "file/file_common.h"
+
+LOG_MODULE_REGISTER(file, LOG_LEVEL_WRN);
 
 
 #define PARTITION_NODE DT_NODELABEL(lfs)
