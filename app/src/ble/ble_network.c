@@ -17,7 +17,7 @@ LOG_MODULE_REGISTER(ble_network);
 
 
 struct network_cache_entry {
-    struct bt_uuid entry;
+    struct bt_uuid_128 entry;
     time_t last_access;
 };
 
@@ -41,7 +41,7 @@ static int network_is_cached(const struct bt_uuid *network)
     }
 
     for (int i = 0; i < network_cache.number_cached; ++i) {
-        if (bt_uuid_cmp(&network_cache.cache[i].entry, network) == 0) {
+        if (bt_uuid_cmp(&network_cache.cache[i].entry.uuid, network) == 0) {
             clock_gettime(CLOCK_REALTIME, &time);
             
             network_cache.cache[i].last_access = time.tv_sec;
@@ -67,7 +67,7 @@ static int add_network_to_cache(const struct bt_uuid *network)
     }
 
     if (network_cache.number_cached < MAX_CACHED_NETWORKS) {
-        bt_uuid_create(&network_cache.cache[network_cache.number_cached].entry, 
+        bt_uuid_create(&network_cache.cache[network_cache.number_cached].entry.uuid, 
                 BT_UUID_128(network)->val, BT_UUID_SIZE_128);
 
         network_cache.number_cached++;
@@ -81,7 +81,7 @@ static int add_network_to_cache(const struct bt_uuid *network)
             }
         }
 
-        bt_uuid_create(&network_cache.cache[pos].entry, 
+        bt_uuid_create(&network_cache.cache[pos].entry.uuid, 
                 BT_UUID_128(network)->val, BT_UUID_SIZE_128);
     }
 
@@ -117,8 +117,8 @@ int find_network(const struct bt_uuid *uuid)
 int find_beacon(struct ibeacon *beacon)
 {
     char network_file[FILE_NAME_LEN];
+    struct ibeacon_file_info info = {0};
     int ret, position;
-    uint8_t buf[32];
 
     strcpy(network_file, "beacons/");
     position = strlen(network_file);
@@ -127,27 +127,12 @@ int find_beacon(struct ibeacon *beacon)
             FILE_NAME_LEN - position);
 
     ret = search_file(network_file, (uint8_t *)&beacon->id, sizeof(beacon->id), 
-            0, buf, sizeof(struct ibeacon_file_info));
+            0, (uint8_t *)&info, sizeof(struct ibeacon_file_info));
     if (ret != 0) {
         return ret;
     }
 
-    if (beacon->id != sys_get_le32(buf)) {
-        LOG_ERR("find_beacon: Incorrect beacon ID matched. Critical error in "
-                "search_file function.");
-        return -1;
-    }
-
-    uint8_t pos = sizeof(uint32_t);
-
-    beacon->location.latitude = sys_get_le32(&buf[pos]);
-    pos += sizeof(uint32_t);
-
-    beacon->location.longitude = sys_get_le32(&buf[pos]);
-    pos += sizeof(uint32_t);
-
-    beacon->location.altitude = sys_get_le32(&buf[pos]);
-
+    beacon->location = info.location;
 
     return 0;
 }

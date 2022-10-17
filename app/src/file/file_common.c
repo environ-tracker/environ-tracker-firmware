@@ -3,11 +3,11 @@
 #include <zephyr/kernel.h>
 #include <zephyr/fs/fs.h>
 #include <zephyr/fs/littlefs.h>
-
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(file, LOG_LEVEL_INF);
 
 #include "file/file_common.h"
+
+LOG_MODULE_REGISTER(file, LOG_LEVEL_WRN);
 
 
 #define PARTITION_NODE DT_NODELABEL(lfs)
@@ -160,7 +160,7 @@ int search_directory(char *dir_name, char *file_name)
 
     LOG_DBG("dir_name: %s, file_name: %s", dir_name, file_name);
 
-    if ((rc = k_mutex_lock(&fs_mutex, K_FOREVER))) {
+    if ((rc = k_mutex_lock(&fs_mutex, K_SECONDS(1)))) {
         return rc;
     }
 
@@ -185,7 +185,7 @@ int search_directory(char *dir_name, char *file_name)
 
         // TODO: change to strncmp
         if (entry.type == FS_DIR_ENTRY_FILE && 
-                (strcmp(entry.name, file_name) == 0)) {
+                (strncmp(entry.name, file_name, FILE_NAME_LEN) == 0)) {
             ret = 0;
             break;
         }
@@ -215,7 +215,7 @@ int search_file(char *fname, uint8_t *data, uint32_t len, uint32_t offset,
         return rc;
     }
 
-    if ((rc = k_mutex_lock(&fs_mutex, K_FOREVER))) {
+    if ((rc = k_mutex_lock(&fs_mutex, K_SECONDS(1)))) {
         return rc;
     }
 
@@ -243,7 +243,7 @@ int search_file(char *fname, uint8_t *data, uint32_t len, uint32_t offset,
 
         if (memcmp(line, data, len) == 0) {
             // data was found in the file
-            LOG_HEXDUMP_INF(data, len, "was found in file");
+            LOG_HEXDUMP_INF(line, block_len, "Matched data:");
             memcpy(block, line, block_len);
             break;
         }

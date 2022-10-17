@@ -23,7 +23,10 @@ LOG_MODULE_REGISTER(ble_localisation, LOG_LEVEL_INF);
 #define SCAN_PERIOD K_SECONDS(5)
 #define MAX_MISSED_SCAN_PERIODS 20
 
-#define BLE_LOCALISATION_STACK_SIZE 1024
+#define BLE_FILTER_STACK_SIZE 4096
+#define BLE_FILTER_PRIORITY 3
+
+#define BLE_LOCALISATION_STACK_SIZE 2048
 #define BLE_LOCALISATION_PRIORITY 5
 
 /* This delay is so that BLE logs can be seen from the shell */
@@ -40,9 +43,6 @@ static const struct bt_le_scan_param scan_params = {
 
 /* List to append ibeacon data to */
 static sys_slist_t ibeacon_list;
-
-/* Work item to filter scanned ibeacons */
-static struct k_work ibeacon_filter_work;
 
 /* Mutex to protect access to ibeacon_list */
 static struct k_mutex ibeacon_list_mutex;
@@ -122,7 +122,7 @@ static int list_contains_ibeacon(struct ibeacon_packet *ibeacon)
  */
 static int add_ibeacon_to_list(struct ibeacon_packet *ibeacon)
 {
-    struct ibeacon_packet *tmp;
+    struct ibeacon_packet *tmp = NULL;
     int ret;
 
     ret = k_mutex_lock(&ibeacon_list_mutex, K_MSEC(1));
@@ -132,7 +132,7 @@ static int add_ibeacon_to_list(struct ibeacon_packet *ibeacon)
 
     /* Allocate memory for ibeacon_packet */
     ret = k_mem_slab_alloc(&ibeacon_mem, (void **)&tmp, K_NO_WAIT);
-    if (ret != 0) {
+    if ((ret != 0) || (tmp == NULL)) {
         LOG_ERR("add_ibeacon_to_list: Packet couldn't be allocated. (%d)", ret);
 
         k_mutex_unlock(&ibeacon_list_mutex);
@@ -149,31 +149,6 @@ static int add_ibeacon_to_list(struct ibeacon_packet *ibeacon)
     return 0;
 }
 
-/**
- * @brief Filter an ibeacon based on if it belongs to a supported network
- */
-static void filter_ibeacon(struct k_work *work)
-{
-    struct ibeacon_packet ibeacon;
-
-    if (k_msgq_get(&ibeacon_msgq, &ibeacon, K_NO_WAIT) != 0) {
-        return;
-    }
-
-    if (!is_supported_network(&ibeacon.beacon.network.uuid)) {
-        return;
-    }
-
-    /* ibeacon is part of a supported network, so add to list if not already */
-    if (list_contains_ibeacon(&ibeacon) == 0) {
-        if (add_ibeacon_to_list(&ibeacon) != 0) {
-            return;
-        }
-        
-        LOG_INF("filter_ibeacon: Added beacon: id: %d to list", 
-                ibeacon.beacon.id);
-    }
-}
 
 /**
  * @brief Parses the input data to see if it is an iBeacon packet. If it is,
@@ -198,7 +173,7 @@ static bool parse_ad(struct bt_data *data, void *user_data)
     }
 
     /* iBeacons packets always start with 0x004c0215 */
-    if (sys_cpu_to_be32(((uint32_t *)data->data)[0]) != 0x004c0215) {
+    if (sys_get_be32(data->data) != 0x004c0215) {
         user_data = NULL;
         return false;
     }
@@ -213,8 +188,8 @@ static bool parse_ad(struct bt_data *data, void *user_data)
     }
 
     /* Ensure endianness */
-    uint16_t major = sys_be16_to_cpu(*(uint16_t *)&data->data[20]);
-    uint16_t minor = sys_be16_to_cpu(*(uint16_t *)&data->data[22]);
+    uint16_t major = sys_get_be16(&data->data[20]);
+    uint16_t minor = sys_get_be16(&data->data[22]);
     
     ad_data->beacon.id = BEACON_ID_INIT(major, minor);
     ad_data->tx_power = data->data[24];
@@ -245,6 +220,7 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
     if (beacon_data == NULL)
         return;
 
+    // TODO: Change to k_uptime_get()
     clock_gettime(CLOCK_REALTIME, &discovered_time);
 
     /* Save RSSI and the time the packet was received */
@@ -252,8 +228,9 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
     beacon_data->discovered_time = discovered_time.tv_sec;
 
     /* Add the ibeacon to the queue and submit filter work */
-    k_msgq_put(&ibeacon_msgq, beacon_data, K_MSEC(10));
-    k_work_submit(&ibeacon_filter_work);
+    if (k_msgq_put(&ibeacon_msgq, beacon_data, K_MSEC(10))) {
+        return;
+    }
 }
 
 /**
@@ -261,19 +238,20 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
  */
 void ble_localisation(void *a, void *b, void *c)
 {
-    int ret, beacons_found = 0, missed_scans = 0;
-    bool data_valid = false;
     struct ibeacon_packet *beacon;
     sys_snode_t *node;
+    int8_t last_rssi;
+    int ret, beacons_found = 0, missed_scans = 0;
+
     struct location_wrapper location = {
         .source = LOCATION_BLE,
         .location = {0}
     };
 
+
     sys_slist_init(&ibeacon_list);
     k_mutex_init(&ibeacon_list_mutex);
 
-    k_work_init(&ibeacon_filter_work, filter_ibeacon);
 
     ret = bt_enable(NULL);
     if (ret) {
@@ -281,7 +259,7 @@ void ble_localisation(void *a, void *b, void *c)
         return;
     }
 
-    LOG_DBG("Bluetooth initialised");
+    LOG_INF("Bluetooth initialised");
 
     ret = bt_le_scan_start(&scan_params, scan_cb);
     if (ret) {
@@ -293,17 +271,20 @@ void ble_localisation(void *a, void *b, void *c)
         k_sleep(SCAN_PERIOD);
 
         /* If enough beacons have been found then run the localisation algo */
+        
+        if (k_mutex_lock(&ibeacon_list_mutex, K_MSEC(1))) {
+            continue;
+        }
         beacons_found = k_mem_slab_num_used_get(&ibeacon_mem);
         if (beacons_found == 0) {
+            k_mutex_unlock(&ibeacon_list_mutex);
+
             ++missed_scans;
 
             /* Missed too many scans. Stop scanning for 10 minutes */
             if (missed_scans >= MAX_MISSED_SCAN_PERIODS) {
 
                 bt_le_scan_stop();
-
-                /* Scanning stopped, so empty the list */
-                empty_ibeacon_list();
 
                 LOG_INF("Missed %d scanning periods, stopped iBeacon "
                         "scanning and suspending", missed_scans);
@@ -317,60 +298,95 @@ void ble_localisation(void *a, void *b, void *c)
         } else {
             missed_scans = 0;
 
-            k_mutex_lock(&ibeacon_list_mutex, K_MSEC(1));
+            /* -100 works as all beacons with rssi < -70 are filtered */
+            last_rssi = -100;
+            
             while ((node = sys_slist_get(&ibeacon_list)) != NULL) {
                 beacon = SYS_SLIST_CONTAINER(node, beacon, next);
-                
+
                 // DEBUG
-                LOG_INF("Beacon ID %u, rssi %d", beacon->beacon.id, 
-                        beacon->rssi);
-            
+                LOG_DBG("Beacon ID %u, rssi %d, lat: %f, long: %f",     
+                        beacon->beacon.id, beacon->rssi, 
+                        beacon->beacon.location.longitude, 
+                        beacon->beacon.location.latitude);
 
-                /* Check if beacon was found */
-                // BUG unaligned memory access
-                // ret = find_beacon(&beacon->beacon); 
-                ret = 0;
-                if (ret < 0) {
-                    /* Beacon either not in file, or error occured. Try next */
+                
+                /* Take the naive approach - use the closest beacons location */
+                if (beacon->rssi > last_rssi) {
+                    last_rssi = beacon->rssi;
 
-                    if (ret == -ESRCH) {
-                        /* Beacon not in network file, request */
-                        LOG_INF("Request beacon with ID: %d", 
-                                beacon->beacon.id);
-                    }
-
-                    LOG_INF("Not found");
-
-                    k_mem_slab_free(&ibeacon_mem, (void **)&beacon);
-                    continue;
-                }
-
-                /* Beacon was found */
-                if (beacons_found == 1 || beacons_found == 2) {
-                    /* Handle special case */
                     location.location = beacon->beacon.location;
-                    data_valid = true;
-                } else {
-                    LOG_INF("Unimplemented");
                 }
 
                 k_mem_slab_free(&ibeacon_mem, (void **)&beacon);
             }
-            k_mutex_unlock(&ibeacon_list_mutex);
-
-            if (data_valid) {
-                while (k_msgq_put(&location_msgq, &location, K_NO_WAIT) != 0) {
-                /* message queue is full: purge old data & try again */
-                    k_msgq_purge(&location_msgq);
-                    LOG_DBG("location_msgq has been purged");
-                }
-                data_valid = false;
-                k_event_post(&data_events, LOCATION_DATA_PENDING);
+            if (k_mutex_unlock(&ibeacon_list_mutex)) {
+                LOG_WRN("Error unlocking mutex");
             }
+
+            LOG_INF("sending loc: lat: %f, long: %f", location.location.latitude, location.location.longitude);
+
+            while (k_msgq_put(&location_msgq, &location, K_NO_WAIT) != 0) {
+            /* message queue is full: purge old data & try again */
+                k_msgq_purge(&location_msgq);
+                LOG_DBG("location_msgq has been purged");
+            }
+            k_event_post(&data_events, LOCATION_DATA_PENDING);
+
         }
     }
 }
 
+
+/**
+ * @brief Filter an ibeacon based on if it belongs to a supported network
+ */
+static void filter_ibeacon(void *a, void *b, void *c)
+{
+    struct ibeacon_packet ibeacon;
+    int ret;
+
+    while (1) {
+
+        if (k_msgq_get(&ibeacon_msgq, &ibeacon, K_FOREVER) != 0) {
+            continue;
+        }
+
+        if (!is_supported_network(&ibeacon.beacon.network.uuid)) {
+            continue;
+        }
+
+        /* 
+         * iBeacon is part of a supported network, so add to list if not 
+         * already 
+         */
+        if (list_contains_ibeacon(&ibeacon) == 0) {
+            
+            
+            ret = find_beacon(&ibeacon.beacon);
+            if (ret == -ESRCH) {
+                LOG_INF("filter_ibeacon: Beacon not found, should request");
+                
+                // TODO: request via LoRaWAN
+                continue;
+            } else if (ret < 0) {
+                LOG_ERR("filter_ibeacon: Problem finding beacon. (%d)", ret);
+                continue;
+            }
+
+            if (add_ibeacon_to_list(&ibeacon) != 0) {
+                continue;
+            }
+
+            LOG_DBG("filter_ibeacon: Added beacon: id: %d to list", 
+                    ibeacon.beacon.id);
+        }
+    }
+}
+
+
 K_THREAD_DEFINE(ble_localisation_id, BLE_LOCALISATION_STACK_SIZE, 
         ble_localisation, NULL, NULL, NULL, BLE_LOCALISATION_PRIORITY, 
         0, BLE_LOCALISATION_STARTUP_DELAY);
+
+K_THREAD_DEFINE(filter, BLE_FILTER_STACK_SIZE, filter_ibeacon, NULL, NULL, NULL, BLE_FILTER_PRIORITY, 0, 0);

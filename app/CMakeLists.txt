@@ -26,6 +26,7 @@ include_directories(inc inc/file inc/ble inc/network inc/gnss inc/gnss/ubx)
 target_sources(app 
     PRIVATE 
         ${proto_sources}
+        src/ble/ble_localisation.c
         src/shell.c 
         src/controller.c
         src/accumulator.c
@@ -39,7 +40,6 @@ target_sources(app
         src/network/lorawan.c
         src/network/encode_pb.c
         src/ble/ble_network.c
-        src/ble/ble_localisation.c
         src/gnss/gnss.c
         src/gnss/gnss_shell_cmds.c
         src/gnss/minmea.c
